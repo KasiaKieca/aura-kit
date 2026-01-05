@@ -109,7 +109,27 @@ function App() {
       setSystemStatus("Forging...")
       const cleanInput = input.replace(/^create\s+/i, "")
       setTimeout(() => {
-        setGeneratedPrompt(`Create ${cleanInput} using Tailwind CSS and ${accentColor}.`)
+        const professionalPrompt = `**System Context:**
+You are a Senior React Developer & Vibe Coder specializing in modern, aesthetically refined component design.
+
+**Technical Stack:**
+- Tailwind CSS v4
+- Framer Motion for animations
+- Lucide React for icons
+
+**Component Specs:**
+- Apply glassmorphism effect using backdrop-blur
+- Use neon edges with accent color #2dd4bf
+- Ensure full responsiveness across mobile, tablet, and desktop
+- Implement smooth transitions and micro-interactions
+
+**User Intent:**
+${cleanInput} - zastosuj najlepsze praktyki UX dla tego elementu.
+
+**Output Format:**
+Deliver only clean, production-ready component code without explanations or comments.`
+        
+        setGeneratedPrompt(professionalPrompt)
         setActiveTab('promptlab')
         setSystemStatus("System Ready")
       }, 500)
