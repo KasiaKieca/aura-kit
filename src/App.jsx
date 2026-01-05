@@ -234,7 +234,8 @@ function App() {
             </div>
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
                <h3 className="text-sm font-bold mb-4 italic" style={{ color: accentColor }}>Project Status</h3>
-               <p className="text-sm opacity-50 leading-relaxed italic-none">Ta wersja AuraKit powstała w styczniu 2026 jako narzędzie wspierające No-Coderów w precyzyjnym promptowaniu.</p>
+               <p className="text-sm opacity-50 leading-relaxed italic-none">This version of AuraKit was created in January 2026 as a tool to support No-Coders in precise prompting.
+</p>
             </div>
           </div>
         )}
