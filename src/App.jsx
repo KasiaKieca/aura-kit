@@ -106,6 +106,14 @@ function App() {
                 onChange={(e) => setCommand(e.target.value)}
                 onKeyDown={handleCommand}
               />
+              <button
+                onClick={() => setSystemMsg("📚 /vibe [color] - change theme • /status - check health • /boost - max aura • /clear - reset console")}
+                className="ml-3 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:opacity-80 font-bold text-sm"
+                style={{ backgroundColor: accentColor + '20', color: accentColor, border: `1px solid ${accentColor}` }}
+                title="Show available commands"
+              >
+                ?
+              </button>
             </div>
             </div>
           </div>
