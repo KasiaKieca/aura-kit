@@ -1,4 +1,13 @@
+import React, { useEffect, useState } from 'react'
+
 function App() {
+  const [auraWidth, setAuraWidth] = useState('0%')
+
+  useEffect(() => {
+    const t = setTimeout(() => setAuraWidth('98%'), 300)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <div className="min-h-screen bg-slate-950 flex">
       {/* Sidebar - Glassmorphism */}
@@ -67,7 +76,48 @@ function App() {
               <div className="ml-2 w-2 h-5 bg-cyan-500/80 animate-[pulse_0.8s_infinite]"></div>
             </div>
           </div>
-        </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1 - Latency */}
+            <div className="p-6 rounded-2xl bg-white/4 border border-cyan-400/20 ring-1 ring-cyan-400/8 shadow-[0_10px_30px_-10px_rgba(6,182,212,0.12)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-cyan-200 uppercase tracking-wider">Latency</div>
+                  <div className="mt-2 text-2xl font-extrabold text-white">24ms</div>
+                </div>
+                <div className="text-cyan-400 text-sm font-semibold">Live</div>
+              </div>
+            </div>
+
+            {/* Card 2 - Aura Flow */}
+            <div className="p-6 rounded-2xl bg-white/4 border border-cyan-400/20 ring-1 ring-cyan-400/8 shadow-[0_10px_30px_-10px_rgba(6,182,212,0.12)]">
+              <div>
+                <div className="text-sm text-cyan-200 uppercase tracking-wider">Aura Flow</div>
+                <div className="mt-2 text-2xl font-extrabold text-white">98%</div>
+                <div className="mt-4">
+                  <div className="w-full h-2 bg-slate-800 rounded overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-400 rounded transition-all duration-1000 shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                      style={{ width: auraWidth }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3 - Active Nodes */}
+            <div className="p-6 rounded-2xl bg-white/4 border border-cyan-400/20 ring-1 ring-cyan-400/8 shadow-[0_10px_30px_-10px_rgba(6,182,212,0.12)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-cyan-200 uppercase tracking-wider">Active Nodes</div>
+                  <div className="mt-2 text-2xl font-extrabold text-white">12</div>
+                </div>
+                <div className="text-cyan-400 text-sm font-semibold">Healthy</div>
+              </div>
+            </div>
+          </div>
       </main>
     </div>
   );
