@@ -1,6 +1,6 @@
 # 🌌 AuraKit - Vibe Coding Playground
 
-A vibe-coded prototype of AuraKit. Focus on intent, flow state, and rapid AI-driven iteration.
+A vibe-coded prototype of AuraKit. Built with React + Tailwind CSS v4. Focus on intent, flow state, and rapid AI-driven iteration.
 
 ## 🚀 Getting Started
 
@@ -19,21 +19,32 @@ If you need to re-initialize the environment:
 
 ---
 
-## ⌨️ Terminal Mastery (Linux Tips)
+## 🧪 Testing & Quality Assurance (Health Check)
+To verify if the environment is stable:
+- **Visual Test:** The background must be dark (`#020617`) with a cyan-glowing logo.
+- **Config Audit:** Ensure `tailwind.config.js` and `postcss.config.js` exist in the root folder.
+- **Build Test:** Run `npm run build` to check if Tailwind styles compile without errors.
 
-- **New Tab:** Click the `+` icon in the terminal panel to keep the server running.
-- **Force Reload:** Use `npm run dev -- --force` if styles disappear.
+---
+
+## ⌨️ Terminal Mastery (Linux Tips)
+- **New Tab:** Use the `+` icon in the VS Code terminal to keep the server running in one tab and use Git in another.
 - **Stop Server:** `Ctrl + C`
+- **Force Refresh:** Use `npm run dev -- --force` if styles don't update.
 
 ---
 
 ## 🪄 AuraKit Prompt Library
 
 ### 🎨 Visual & Layout (Vibe Phase)
-- "Create a dark, futuristic dashboard layout using Tailwind CSS. Use slate-950 for background and cyan-500 for glow effects."
-- "Add a glassmorphism sidebar with navigation: Dashboard, Analytics, Settings, and Aura-Core."
+- "Add a glassmorphism sidebar with navigation links: Dashboard, Analytics, Settings, and Aura-Core."
 - "Design a centered 'Command Center' input field that looks like a terminal prompt with a pulsing neon border."
 
 ### ⚙️ Functional Components
 - "Create a 'Vibe Level' card with a circular progress bar that changes color from purple to gold."
-- "Build a responsive grid of 3 cards showing real-time stats: Latency, Aura Flow, Active Nodes."
+- "Build a responsive grid of 3 cards showing real-time stats (Latency, Aura Flow, Active Nodes)."
+- "Implement a smooth 'Fade In' animation for all components using Tailwind and Framer Motion."
+
+### 🛠️ Refactoring & Clean Code
+- "Review App.jsx and extract the Navigation Sidebar into a separate component file."
+- "Optimize the Tailwind classes in the main container for better readability."
