@@ -22,127 +22,104 @@ function App() {
   const handleCommand = (e) => {
     if (e.key === 'Enter') {
       const cmd = command.toLowerCase().trim()
-
+      
       if (cmd === '/status') {
         setSystemMsg("Everything is looking great! ✨")
       } else if (cmd === '/clear') {
-        setSystemMsg("All clear! 🌟")
+        setSystemMsg("Operational")
       } else if (cmd === '/boost') {
         setSystemMsg("Aura levels at maximum! 🚀")
         setAuraWidth('100%')
-      } else if (cmd === '/help') {
-        setSystemMsg("📚 /vibe [color] - change theme • /status - check health • /boost - max aura • /clear - reset console")
       } else if (cmd.startsWith('/vibe ')) {
         const color = cmd.replace('/vibe ', '').trim()
         setAccentColor(color)
         setSystemMsg(`Vibe updated to ${color}`)
+      } else if (cmd.startsWith('/refine ')) {
+        const idea = cmd.replace('/refine ', '').trim()
+        const refined = `PROMPT FOR AI: Add ${idea} using Tailwind CSS and the ${accentColor} color scheme. Ensure it matches the AuraKit design.`
+        setSystemMsg(refined)
+      } else if (cmd === '/help') {
+        setSystemMsg("Commands: /vibe [color], /refine [idea], /status, /boost, /clear")
       } else {
-        setSystemMsg(`Unknown command: ${cmd}`)
+        setSystemMsg(`Unknown: ${cmd}. Click '?' for help.`)
       }
-
       setCommand("")
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex text-white font-sans">
+    <div className="min-h-screen bg-slate-950 flex text-white font-sans overflow-x-hidden">
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 p-6 m-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-lg">
+      <aside className="hidden lg:flex flex-col w-72 p-6 m-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-10 w-10 rounded-lg bg-gradient-to-tr from-cyan-400 to-blue-500 flex items-center justify-center font-extrabold text-slate-900 text-xl">A</div>
           <div>
-            <h2 className="text-lg font-black tracking-tight uppercase">AURA<span className="text-cyan-300">KIT</span></h2>
-            <p className="text-xs text-cyan-200/60 font-mono mt-0.5">Playground v1.0</p>
+            <h2 className="text-lg font-black tracking-tight uppercase">AURA<span style={{ color: accentColor }}>KIT</span></h2>
+            <p className="text-[10px] text-cyan-200/40 font-mono mt-0.5">Vibe Coder v1.0</p>
           </div>
         </div>
-
         <nav className="mt-4 flex-1">
           <ul className="space-y-2">
-            <li>
-              <a href="#dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/10 border-l-4 border-cyan-400 text-white">
-                <span className="font-semibold">Dashboard</span>
-              </a>
-            </li>
-            <li className="opacity-50 hover:opacity-100 transition">
-              <a href="#analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5">
-                <span>Analytics</span>
-              </a>
-            </li>
-            <li className="opacity-50 hover:opacity-100 transition">
-              <a href="#settings" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5">
-                <span>Settings</span>
-              </a>
-            </li>
+            <li><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/10 border-l-4" style={{ borderColor: accentColor }}>Dashboard</a></li>
+            <li className="opacity-50"><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg">Prompt Lab 🧪</a></li>
+            <li className="opacity-50"><a href="#" className="flex items-center gap-3 px-4 py-2 rounded-lg">Settings</a></li>
           </ul>
         </nav>
-        <div className="mt-6 text-[10px] text-cyan-200/40 uppercase tracking-widest text-center italic">vibe · coding · session</div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center">
-        <div className="w-full max-w-4xl p-8 md:p-12 bg-slate-900 rounded-3xl shadow-[0_0_60px_-15px_rgba(6,182,212,0.3)] text-center" style={{ borderColor: accentColor, borderWidth: '1px' }}>
-          <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-2 uppercase">
+        <div className="w-full max-w-4xl p-8 md:p-12 bg-slate-900 rounded-3xl shadow-2xl text-center border transition-all duration-500" style={{ borderColor: accentColor + '40' }}>
+          <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-2 uppercase italic">
             Aura<span style={{ color: accentColor }}>kit</span>
           </h1>
-          <p className="text-cyan-300/60 font-mono text-xs uppercase tracking-[0.4em] mb-10 h-4">
+          <p className="text-cyan-300/40 font-mono text-[10px] uppercase tracking-[0.4em] mb-10">
             System Status: {systemMsg}
           </p>
 
-          <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden mb-12 max-w-md mx-auto">
-            <div className="h-full bg-cyan-500 w-1/3 shadow-[0_0_20px_#06b6d4] animate-pulse"></div>
-          </div>
-
           <div className="max-w-xl mx-auto">
-            <p className="text-xs text-cyan-300/60 mb-3 font-mono">💡 Try typing /vibe followed by a color name to change the look of your app!</p>
             <div className="relative group">
-              <div className="absolute -inset-1 bg-cyan-500/20 rounded-xl blur opacity-75 group-focus-within:opacity-100 transition duration-500"></div>
-              <div className="relative flex items-center bg-slate-950 rounded-xl border border-cyan-500/40 px-5 py-4 shadow-2xl">
-              <span className="text-cyan-500 font-mono font-bold text-xl mr-4">{">_"}</span>
-              <input
-                type="text"
-                placeholder="Enter command (e.g. /status)..."
-                className="bg-transparent border-none outline-none text-cyan-100 font-mono w-full placeholder:text-cyan-900/50 text-lg focus:ring-0"
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={handleCommand}
-              />
-              <button
-                onClick={() => setSystemMsg("📚 /vibe [color] - change theme • /status - check health • /boost - max aura • /clear - reset console")}
-                className="ml-3 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:opacity-80 font-bold text-sm"
-                style={{ backgroundColor: accentColor + '20', color: accentColor, border: `1px solid ${accentColor}` }}
-                title="Show available commands"
-              >
-                ?
-              </button>
+              <div className="absolute -inset-1 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-500" style={{ backgroundColor: accentColor }}></div>
+              <div className="relative flex items-center bg-slate-950 rounded-xl border border-white/10 px-5 py-4">
+                <span className="font-mono font-bold text-xl mr-4" style={{ color: accentColor }}>{">_"}</span>
+                <input
+                  type="text"
+                  placeholder="Enter command or idea..."
+                  className="bg-transparent border-none outline-none text-white font-mono w-full text-lg focus:ring-0"
+                  value={command}
+                  onChange={(e) => setCommand(e.target.value)}
+                  onKeyDown={handleCommand}
+                />
+                <button
+                  onClick={() => setSystemMsg("Commands: /vibe [color], /refine [idea], /status, /boost, /clear")}
+                  className="ml-3 w-8 h-8 rounded-lg font-bold border"
+                  style={{ color: accentColor, borderColor: accentColor }}
+                >?</button>
+              </div>
             </div>
-            </div>
+            <p className="mt-4 text-[10px] text-cyan-300/30 font-mono uppercase">💡 Try /refine [idea] to build your prompt</p>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-            <div className="text-xs text-cyan-300/50 uppercase tracking-widest mb-1 font-bold">Latency</div>
-            <div className="text-3xl font-black text-white font-mono">{latency}<span className="text-sm ml-1 text-cyan-400/50 uppercase tracking-normal font-sans">ms</span></div>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+            <div className="text-[10px] opacity-40 uppercase mb-1 font-bold">Latency</div>
+            <div className="text-3xl font-black font-mono">{latency}ms</div>
           </div>
-
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-            <div className="text-xs text-cyan-300/50 uppercase tracking-widest mb-1 font-bold">Aura Flow</div>
-            <div className="text-3xl font-black text-white font-mono">{auraWidth}</div>
-            <div className="mt-3 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full transition-all duration-1000"
-                style={{ width: auraWidth, backgroundColor: accentColor, boxShadow: `0_0_10px_${accentColor.replace('#', '')}` }}
-              ></div>
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+            <div className="text-[10px] opacity-40 uppercase mb-1 font-bold">Aura Flow</div>
+            <div className="text-3xl font-black font-mono">{auraWidth}</div>
+            <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full transition-all duration-1000" style={{ width: auraWidth, backgroundColor: accentColor }}></div>
             </div>
           </div>
-
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm flex justify-between items-end">
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-end">
             <div>
-              <div className="text-xs text-cyan-300/50 uppercase tracking-widest mb-1 font-bold">Nodes</div>
-              <div className="text-3xl font-black text-white font-mono">12</div>
+              <div className="text-[10px] opacity-40 uppercase mb-1 font-bold">Nodes</div>
+              <div className="text-3xl font-black font-mono">12</div>
             </div>
-            <div className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-cyan-400/30 font-bold uppercase tracking-wider">Healthy</div>
+            <div className="text-[10px] px-2 py-1 rounded font-bold uppercase border" style={{ color: accentColor, borderColor: accentColor + '40' }}>Healthy</div>
           </div>
         </div>
       </main>

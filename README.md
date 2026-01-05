@@ -1,7 +1,20 @@
-# 🌌 AuraKit - Vibe Coding Playground
+# 🧪 AuraKit - Vibe Coding Assistant
 
-A vibe-coded prototype of AuraKit. Built with React + Tailwind CSS v4. Focus on intent, flow state, and rapid AI-driven iteration.
+AuraKit is a specialized dashboard designed for **Vibe Coders** who want to build applications through creative intent and precise prompting, rather than manual coding.
 
+## 🚀 Key Features
+- **Prompt Refiner**: Use the `/refine [idea]` command to transform raw thoughts into professional AI instructions.
+- **Dynamic Vibe Control**: Instantly change the entire look of the UI using the `/vibe [color]` command.
+- **Real-time Analytics**: Monitor system "Aura Flow" and simulated latency to feel like a true system operator.
+
+## 💡 How to use it?
+1. Open your terminal and run `npm run dev`.
+2. Access the dashboard at `localhost`.
+3. Click the **?** button or type `/help` to see all available commands.
+4. Use `/refine` to generate perfect prompts for GitHub Copilot.
+
+## 🎯 Goal
+Empowering non-technical and technical users to communicate better with AI and build software faster through "Vibes".
 ## 🚀 Getting Started
 
 ### For New Users (Cloning the repo)
