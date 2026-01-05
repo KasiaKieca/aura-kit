@@ -5,6 +5,7 @@ function App() {
   const [command, setCommand] = useState("")
   const [systemMsg, setSystemMsg] = useState("Operational")
   const [latency, setLatency] = useState(24)
+  const [accentColor, setAccentColor] = useState('#22d3ee')
 
   useEffect(() => {
     const t = setTimeout(() => setAuraWidth('98%'), 300)
@@ -21,18 +22,24 @@ function App() {
   const handleCommand = (e) => {
     if (e.key === 'Enter') {
       const cmd = command.toLowerCase().trim()
-      
+
       if (cmd === '/status') {
-        setSystemMsg("All systems nominal. Aura Flow optimal.")
+        setSystemMsg("Everything is looking great! ✨")
       } else if (cmd === '/clear') {
-        setSystemMsg("Operational")
+        setSystemMsg("All clear! 🌟")
       } else if (cmd === '/boost') {
-        setSystemMsg("Aura levels boosted to maximum!")
+        setSystemMsg("Aura levels at maximum! 🚀")
         setAuraWidth('100%')
+      } else if (cmd === '/help') {
+        setSystemMsg("📚 /vibe [color] - change theme • /status - check health • /boost - max aura • /clear - reset console")
+      } else if (cmd.startsWith('/vibe ')) {
+        const color = cmd.replace('/vibe ', '').trim()
+        setAccentColor(color)
+        setSystemMsg(`Vibe updated to ${color}`)
       } else {
         setSystemMsg(`Unknown command: ${cmd}`)
       }
-      
+
       setCommand("")
     }
   }
@@ -73,30 +80,33 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center">
-        <div className="w-full max-w-4xl p-8 md:p-12 bg-slate-900 border border-cyan-500/20 rounded-3xl shadow-[0_0_60px_-15px_rgba(6,182,212,0.3)] text-center">
+        <div className="w-full max-w-4xl p-8 md:p-12 bg-slate-900 rounded-3xl shadow-[0_0_60px_-15px_rgba(6,182,212,0.3)] text-center" style={{ borderColor: accentColor, borderWidth: '1px' }}>
           <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter mb-2 uppercase">
-            Aura<span className="text-cyan-400">kit</span>
+            Aura<span style={{ color: accentColor }}>kit</span>
           </h1>
           <p className="text-cyan-300/60 font-mono text-xs uppercase tracking-[0.4em] mb-10 h-4">
             System Status: {systemMsg}
           </p>
-          
+
           <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden mb-12 max-w-md mx-auto">
             <div className="h-full bg-cyan-500 w-1/3 shadow-[0_0_20px_#06b6d4] animate-pulse"></div>
           </div>
 
-          <div className="max-w-xl mx-auto relative group">
-            <div className="absolute -inset-1 bg-cyan-500/20 rounded-xl blur opacity-75 group-focus-within:opacity-100 transition duration-500"></div>
-            <div className="relative flex items-center bg-slate-950 rounded-xl border border-cyan-500/40 px-5 py-4 shadow-2xl">
+          <div className="max-w-xl mx-auto">
+            <p className="text-xs text-cyan-300/60 mb-3 font-mono">💡 Try typing /vibe followed by a color name to change the look of your app!</p>
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-cyan-500/20 rounded-xl blur opacity-75 group-focus-within:opacity-100 transition duration-500"></div>
+              <div className="relative flex items-center bg-slate-950 rounded-xl border border-cyan-500/40 px-5 py-4 shadow-2xl">
               <span className="text-cyan-500 font-mono font-bold text-xl mr-4">{">_"}</span>
-              <input 
-                type="text" 
-                placeholder="Enter command (e.g. /status)..." 
+              <input
+                type="text"
+                placeholder="Enter command (e.g. /status)..."
                 className="bg-transparent border-none outline-none text-cyan-100 font-mono w-full placeholder:text-cyan-900/50 text-lg focus:ring-0"
                 value={command}
                 onChange={(e) => setCommand(e.target.value)}
                 onKeyDown={handleCommand}
               />
+            </div>
             </div>
           </div>
         </div>
@@ -112,9 +122,9 @@ function App() {
             <div className="text-xs text-cyan-300/50 uppercase tracking-widest mb-1 font-bold">Aura Flow</div>
             <div className="text-3xl font-black text-white font-mono">{auraWidth}</div>
             <div className="mt-3 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-cyan-400 transition-all duration-1000 shadow-[0_0_10px_#22d3ee]" 
-                style={{ width: auraWidth }}
+              <div
+                className="h-full transition-all duration-1000"
+                style={{ width: auraWidth, backgroundColor: accentColor, boxShadow: `0_0_10px_${accentColor.replace('#', '')}` }}
               ></div>
             </div>
           </div>
