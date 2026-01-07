@@ -6,8 +6,14 @@ const IconIdea = ({ color }) => (
 const IconLab = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>
 )
+const IconAgents = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+)
 const IconAbout = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+)
+const IconClose = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 )
 
 function App() {
@@ -18,6 +24,7 @@ function App() {
   const [accentColor, setAccentColor] = useState('#2dd4bf')
   const [showHelp, setShowHelp] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState("")
+  const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null) // Stan dla modalu z instrukcjami
 
   // FUNKCJA Z RÓŻNYMI SZABLONAMI DLA KAŻDEJ KATEGORII
   const wrapInExpertContext = (text, category = 'UI') => {
@@ -156,6 +163,153 @@ Deliver creative brief or detailed description. Include mood board suggestions a
     richText: wrapInExpertContext(kit.text, kit.cat)
   }));
 
+  // DEFINICJA AGENTÓW FIRMOWYCH
+  const companyAgents = [
+    {
+      role: "Senior Backend Architect",
+      specialization: "Python • FastAPI • Docker",
+      color: "#8b5cf6", // fioletowy
+      description: "Microservices expert with focus on scalable, containerized architectures. Every solution includes Dockerfile and docker-compose.yml.",
+      systemPrompt: `**Agent Role:**
+You are a Senior Backend Architect specializing in Python microservices and containerized infrastructure.
+
+**Technical Stack:**
+- Python 3.11+ with FastAPI framework
+- Docker with multi-stage builds
+- Docker Compose for orchestration
+- PostgreSQL with async SQLAlchemy
+- Redis for caching and message queuing
+- Pytest for unit and integration testing
+
+**Architecture Principles:**
+- Design services following 12-factor app methodology
+- Implement proper error handling with custom exception classes
+- Use dependency injection for testability
+- Apply SOLID principles in service layers
+- Include health check endpoints (/health, /ready)
+- Implement structured logging with correlation IDs
+
+**Deliverables:**
+Every solution MUST include:
+1. **Dockerfile** (multi-stage, optimized layers)
+2. **docker-compose.yml** (with service dependencies)
+3. **requirements.txt** or **pyproject.toml**
+4. Environment variable configuration (.env.example)
+5. README with setup instructions
+
+**Output Format:**
+Provide production-ready Python code with FastAPI endpoints, proper async/await patterns, and complete Docker configuration. Include comments explaining architectural decisions.`
+    },
+    {
+      role: "Technical Project Manager",
+      specialization: "Agile • Scrum • JIRA",
+      color: "#f59e0b", // pomarańczowy
+      description: "Agile delivery specialist focused on sprint planning, roadmaps, and risk mitigation. Creates actionable JIRA stories with clear acceptance criteria.",
+      systemPrompt: `**Agent Role:**
+You are a Technical Project Manager with expertise in Agile/Scrum methodologies and team coordination.
+
+**Management Framework:**
+- Scrum ceremonies (daily standups, sprint planning, retrospectives)
+- Epic and story decomposition
+- Dependency mapping and risk assessment
+- Velocity tracking and burndown charts
+- Stakeholder communication and reporting
+
+**Deliverable Standards:**
+- **User Stories**: As a [role], I want [feature], so that [benefit]
+- **Acceptance Criteria**: Given/When/Then format (Gherkin syntax)
+- **Story Points**: Fibonacci estimation with justification
+- **Definition of Done**: Clear checklist for completion
+- **Risk Register**: Identify, assess, and mitigate project risks
+
+**JIRA Story Format:**
+- Title: Clear, concise, action-oriented
+- Description: Context, user value, technical notes
+- Subtasks: Broken down by technical domain
+- Labels: Priority, component, sprint
+- Linked issues: Dependencies and blockers
+
+**Output Format:**
+Deliver structured JIRA stories with complete acceptance criteria, story point estimates, and risk analysis. Include sprint roadmap and dependency diagram when relevant.`
+    },
+    {
+      role: "Product Owner",
+      specialization: "ROI • Backlog • Acceptance Criteria",
+      color: "#10b981", // zielony
+      description: "Business value optimizer specializing in backlog prioritization, ROI analysis, and precise acceptance criteria aligned with business goals.",
+      systemPrompt: `**Agent Role:**
+You are a Product Owner focused on maximizing business value through strategic backlog management and data-driven prioritization.
+
+**Product Management Framework:**
+- Value vs. Effort matrix (RICE scoring: Reach, Impact, Confidence, Effort)
+- MoSCoW prioritization (Must, Should, Could, Won't)
+- OKR alignment (Objectives and Key Results)
+- User journey mapping
+- A/B testing hypothesis formulation
+
+**Backlog Item Structure:**
+- **Business Value**: Quantifiable impact (revenue, cost savings, user engagement)
+- **User Persona**: Target audience and pain points
+- **Success Metrics**: KPIs and measurement plan
+- **Acceptance Criteria**: Testable, unambiguous conditions
+- **Dependencies**: Technical and business constraints
+- **ROI Calculation**: Expected value vs. development cost
+
+**Prioritization Criteria:**
+1. Strategic alignment with company OKRs
+2. Customer impact and user feedback
+3. Technical feasibility and risk
+4. Revenue potential and market opportunity
+5. Compliance and regulatory requirements
+
+**Output Format:**
+Deliver prioritized backlog items with clear business rationale, precise acceptance criteria in Given/When/Then format, success metrics, and ROI justification. Include user story mapping when relevant.`
+    },
+    {
+      role: "QA Automation Lead",
+      specialization: "Playwright • TypeScript • E2E",
+      color: "#ec4899", // różowy
+      description: "E2E testing expert using Playwright with TypeScript. Implements Page Object Model (POM) for maintainable, stable test automation.",
+      systemPrompt: `**Agent Role:**
+You are a QA Automation Lead specializing in end-to-end testing with Playwright and TypeScript.
+
+**Testing Stack:**
+- Playwright (latest) with TypeScript
+- Page Object Model (POM) design pattern
+- Allure or Playwright HTML Reporter
+- CI/CD integration (GitHub Actions, GitLab CI)
+- Visual regression testing with Percy/Playwright screenshots
+- Accessibility testing with axe-core
+
+**Test Architecture:**
+- **Page Objects**: Encapsulate page-specific locators and actions
+- **Test Fixtures**: Reusable setup and teardown logic
+- **Custom Matchers**: Business-logic assertions
+- **Data Factories**: Generate test data with Faker.js
+- **Retry Logic**: Handle flakiness with smart waits and retries
+- **Parallel Execution**: Optimize test runtime with sharding
+
+**Best Practices:**
+- Use data-testid attributes for stable selectors
+- Implement explicit waits (waitForSelector, waitForLoadState)
+- Avoid hard-coded waits (no setTimeout)
+- Group tests by feature/module
+- Use beforeEach/afterEach for test isolation
+- Include clear test descriptions and comments
+
+**Deliverables:**
+Every test suite MUST include:
+1. **Page Object Classes** (TypeScript with proper typing)
+2. **Test Specs** (organized by feature)
+3. **playwright.config.ts** (with proper timeouts, retries)
+4. **CI/CD pipeline config** (GitHub Actions example)
+5. **README** with setup and execution instructions
+
+**Output Format:**
+Provide production-ready Playwright tests with POM structure, TypeScript types, and comprehensive assertions. Include CI/CD configuration and best practice comments.`
+    }
+  ];
+
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('aura_forge_v1.0')
     return saved ? JSON.parse(saved) : []
@@ -184,6 +338,13 @@ Deliver creative brief or detailed description. Include mood board suggestions a
     setCommand("")
   }
 
+  // ZOPTYMALIZOWANA FUNKCJA AKTYWACJI AGENTA - kopiuje do schowka i pozostaje w zakładce
+  const activateAgent = (agent) => {
+    copyToClipboard(agent.systemPrompt)
+    setSystemStatus(`AGENT ${agent.role.toUpperCase()} INITIALIZED! READY TO PASTE`)
+    setTimeout(() => setSystemStatus("System Ready"), 4000)
+  }
+
   const filteredKits = starterKits.filter(kit => 
     kit.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
     kit.cat.toLowerCase().includes(searchQuery.toLowerCase())
@@ -203,6 +364,9 @@ Deliver creative brief or detailed description. Include mood board suggestions a
           <button onClick={() => setActiveTab('promptlab')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'promptlab' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
             <IconLab color={activeTab === 'promptlab' ? accentColor : '#fff'} /> Prompt Lab
           </button>
+          <button onClick={() => setActiveTab('agents')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'agents' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
+            <IconAgents color={activeTab === 'agents' ? accentColor : '#fff'} /> Agents
+          </button>
           <button onClick={() => setActiveTab('about')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'about' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
             <IconAbout color={activeTab === 'about' ? accentColor : '#fff'} /> About Kit
           </button>
@@ -210,6 +374,19 @@ Deliver creative brief or detailed description. Include mood board suggestions a
       </aside>
 
       <main className="flex-1 p-8 overflow-y-auto">
+        {/* Status bar - widoczny globalnie */}
+        <div className="fixed top-8 right-8 z-50">
+          <p 
+            className="text-[10px] font-mono uppercase tracking-[0.3em] px-6 py-3 rounded-xl bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl transition-all"
+            style={{ 
+              color: systemStatus.includes("AGENT") ? accentColor : "white",
+              borderColor: systemStatus.includes("AGENT") ? accentColor : "rgba(255,255,255,0.1)"
+            }}
+          >
+            {systemStatus}
+          </p>
+        </div>
+
         {activeTab === 'forge' && (
           <div className="h-full flex flex-col items-center justify-center max-w-4xl mx-auto text-center">
             <h1 className="text-8xl font-black mb-4 uppercase tracking-tighter italic" style={{ textShadow: `0 0 40px ${accentColor}40` }}>Aura<span style={{ color: accentColor }}>kit</span></h1>
@@ -278,10 +455,7 @@ Deliver creative brief or detailed description. Include mood board suggestions a
                         <button onClick={() => copyToClipboard(fav.text)} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Copy</button>
                         <button 
                           onClick={() => {
-                            console.log('Deleting:', fav.id);
-                            console.log('Before:', favorites.map(f => f.id));
                             const newFavs = favorites.filter(f => f.id !== fav.id);
-                            console.log('After:', newFavs.map(f => f.id));
                             setFavorites(newFavs);
                           }} 
                           className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
@@ -294,6 +468,124 @@ Deliver creative brief or detailed description. Include mood board suggestions a
                 </div>
               </section>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'agents' && (
+          <div className="max-w-6xl mx-auto">
+            <header className="mb-12 border-b border-white/10 pb-8">
+              <h2 className="text-4xl font-black uppercase italic mb-2">Company Agents</h2>
+              <p className="text-sm opacity-50 font-mono">Activate specialized AI personas - instructions copied instantly to clipboard</p>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {companyAgents.map((agent, i) => (
+                <div 
+                  key={i} 
+                  className="p-8 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all shadow-2xl group"
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-2xl font-black mb-2" style={{ color: agent.color }}>{agent.role}</h3>
+                      <p className="text-[10px] font-mono uppercase tracking-widest opacity-40">{agent.specialization}</p>
+                    </div>
+                    <div 
+                      className="w-3 h-3 rounded-full animate-pulse" 
+                      style={{ backgroundColor: agent.color, boxShadow: `0 0 20px ${agent.color}` }}
+                    ></div>
+                  </div>
+                  
+                  <p className="text-sm opacity-70 leading-relaxed mb-8 font-light">{agent.description}</p>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => activateAgent(agent)}
+                      className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105 hover:shadow-2xl"
+                      style={{ backgroundColor: agent.color }}
+                    >
+                      Activate Agent
+                    </button>
+                    <button
+                      onClick={() => setSelectedAgentForPreview(agent)}
+                      className="px-4 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                    >
+                      View Instructions
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-16 p-8 rounded-2xl bg-white/5 border border-white/10">
+              <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">Quick Start Guide:</h3>
+              <ol className="text-sm opacity-70 space-y-2 font-mono">
+                <li>1. Click "Activate Agent" - instructions are copied to clipboard instantly</li>
+                <li>2. Open Cursor/Copilot settings and paste as custom instruction</li>
+                <li>3. Use "View Instructions" to preview agent's full system prompt</li>
+                <li>4. Start coding with your specialized AI assistant</li>
+              </ol>
+            </div>
+
+            {/* MODAL Z PODGLĄDEM INSTRUKCJI AGENTA */}
+            {selectedAgentForPreview && (
+              <div 
+                className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
+                onClick={() => setSelectedAgentForPreview(null)}
+              >
+                <div 
+                  className="max-w-4xl w-full max-h-[80vh] overflow-y-auto p-8 rounded-3xl bg-slate-900 border-2 shadow-2xl"
+                  style={{ borderColor: selectedAgentForPreview.color }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-3xl font-black mb-2" style={{ color: selectedAgentForPreview.color }}>
+                        {selectedAgentForPreview.role}
+                      </h3>
+                      <p className="text-xs font-mono uppercase tracking-widest opacity-40">
+                        {selectedAgentForPreview.specialization}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedAgentForPreview(null)}
+                      className="p-2 rounded-xl hover:bg-white/10 transition-all"
+                    >
+                      <IconClose color="#fff" />
+                    </button>
+                  </div>
+
+                  <div className="mb-6 p-4 rounded-xl bg-white/5">
+                    <p className="text-sm opacity-70 leading-relaxed">{selectedAgentForPreview.description}</p>
+                  </div>
+
+                  <div className="p-6 rounded-xl bg-slate-950 border border-white/10">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">System Prompt:</h4>
+                    <pre className="text-xs font-mono opacity-70 whitespace-pre-wrap leading-relaxed">
+                      {selectedAgentForPreview.systemPrompt}
+                    </pre>
+                  </div>
+
+                  <div className="mt-6 flex gap-4">
+                    <button 
+                      onClick={() => {
+                        activateAgent(selectedAgentForPreview);
+                        setSelectedAgentForPreview(null);
+                      }}
+                      className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
+                      style={{ backgroundColor: selectedAgentForPreview.color }}
+                    >
+                      Copy to Clipboard
+                    </button>
+                    <button 
+                      onClick={() => setSelectedAgentForPreview(null)}
+                      className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
