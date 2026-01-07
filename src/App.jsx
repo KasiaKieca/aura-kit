@@ -371,14 +371,52 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // HARD FIX: Delete favorite prompt by ID (not index)
+  // HARD FIX: Delete favorite by ID with localStorage force update
   const deleteFavorite = (favoriteId) => {
-    console.log('🗑️ DELETE: Targeting ID:', favoriteId)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🗑️ DELETE: Function called')
+    console.log('📌 Target ID to delete:', favoriteId)
+    console.log('📊 Current favorites count:', favorites.length)
     
-    setFavorites(prevFavorites => {
-      const filtered = prevFavorites.filter(fav => fav.id !== favoriteId)
-      console.log('✅ DELETE: Success. Before:', prevFavorites.length, 'After:', filtered.length)
-      return filtered
+    // Force immediate update with functional setState
+    setFavorites(currentFavorites => {
+      console.log('🔄 Inside setFavorites callback')
+      console.log('📦 Current state length:', currentFavorites.length)
+      console.log('🔍 All current IDs:', currentFavorites.map(f => f.id))
+      
+      // Find the item that will be deleted
+      const itemToDelete = currentFavorites.find(f => f.id === favoriteId)
+      if (itemToDelete) {
+        console.log('✅ Found item to delete:', {
+          id: itemToDelete.id,
+          preview: itemToDelete.text.substring(0, 50) + '...'
+        })
+      } else {
+        console.warn('⚠️ WARNING: Item with ID', favoriteId, 'NOT FOUND in current state!')
+      }
+      
+      // Filter out the item with matching ID
+      const newFavorites = currentFavorites.filter((fav, index) => {
+        const shouldKeep = fav.id !== favoriteId
+        if (!shouldKeep) {
+          console.log(`🚫 REMOVING item at index ${index}:`, {
+            id: fav.id,
+            text: fav.text.substring(0, 30) + '...'
+          })
+        }
+        return shouldKeep
+      })
+      
+      console.log('✅ Filter complete')
+      console.log('📊 Count: BEFORE =', currentFavorites.length, ', AFTER =', newFavorites.length)
+      console.log('📋 Remaining IDs:', newFavorites.map(f => f.id))
+      
+      // Force update localStorage immediately
+      localStorage.setItem('aura_forge_v1.0', JSON.stringify(newFavorites))
+      console.log('💾 localStorage force updated')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      
+      return newFavorites
     })
     
     setSystemStatus("Removed from Collection")
@@ -830,7 +868,9 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
               </section>
               
               <section>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>Your Collection ({favorites.length})</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>
+                  Your Collection ({favorites.length})
+                </h3>
                 <div className="space-y-4">
                   {favorites.length === 0 ? (
                     <div className="p-8 rounded-2xl bg-white/5 border border-white/10 text-center">
@@ -838,40 +878,76 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
                   ) : (
-                    // FIXED: Use fav.id as key (not index) for stable React rendering
-                    favorites.map((fav) => {
-                      // Create stable reference for this specific favorite item
-                      const favoriteId = fav.id
-                      const favoriteText = fav.text
+                    // HARD FIX: Completely rewritten loop with explicit ID handling
+                    favorites.map((fav, arrayIndex) => {
+                      // CRITICAL: Create immutable local copies in this iteration's scope
+                      const thisItemId = fav.id
+                      const thisItemText = fav.text
+                      const thisItemTimestamp = fav.timestamp || Date.now()
+                      
+                      // Verification log on every render
+                      console.log(`🎨 RENDER: Item at index ${arrayIndex}, ID: ${thisItemId.substring(0, 20)}...`)
                       
                       return (
-                        <div key={favoriteId} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
-                          {/* FIXED: Removed readOnly, added onChange for editing functionality */}
+                        <div 
+                          key={thisItemId}
+                          data-item-id={thisItemId}
+                          data-array-index={arrayIndex}
+                          className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all"
+                        >
+                          {/* Debug info visible in UI */}
+                          <div className="flex justify-between items-center mb-2 text-[8px] font-mono opacity-20 group-hover:opacity-60 transition-opacity">
+                            <span>Index: {arrayIndex} | ID: {thisItemId.substring(0, 25)}...</span>
+                            <span>{new Date(thisItemTimestamp).toLocaleTimeString()}</span>
+                          </div>
+                          
+                          {/* Editable textarea */}
                           <textarea 
                             className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none focus:opacity-80 transition-opacity" 
-                            value={favoriteText}
+                            value={thisItemText}
                             onChange={(e) => {
-                              console.log('✏️ EDIT: Updating favorite ID:', favoriteId)
-                              updateFavoriteText(favoriteId, e.target.value)
+                              const newText = e.target.value
+                              console.log('✏️ EDIT: Item ID:', thisItemId, '| New length:', newText.length)
+                              updateFavoriteText(thisItemId, newText)
                             }}
                             placeholder="Edit your prompt here..."
                           />
+                          
                           <div className="flex gap-4">
+                            {/* Copy button */}
                             <button 
-                              onClick={() => {
-                                console.log('📋 COPY: Copying favorite ID:', favoriteId)
-                                copyToClipboard(favoriteText)
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                console.log('📋 COPY: Index', arrayIndex, '| ID:', thisItemId)
+                                copyToClipboard(thisItemText)
                               }} 
                               className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
                             >
                               Copy
                             </button>
-                            {/* FIXED: Delete button now uses favoriteId (not index) */}
+                            
+                            {/* HARD FIX: Delete button with explicit ID from local const */}
                             <button 
-                              onClick={() => {
-                                console.log('🗑️ DELETE: Clicked for ID:', favoriteId)
-                                deleteFavorite(favoriteId)
-                              }} 
+                              onClick={(e) => {
+                                // Prevent event bubbling
+                                e.stopPropagation()
+                                e.preventDefault()
+                                
+                                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+                                console.log('🖱️ DELETE BUTTON CLICKED!')
+                                console.log('👆 Button data attributes:', e.currentTarget.dataset)
+                                console.log('📍 Array index:', arrayIndex)
+                                console.log('🆔 Local const thisItemId:', thisItemId)
+                                console.log('🆔 Direct fav.id:', fav.id)
+                                console.log('🔍 Are they equal?', thisItemId === fav.id)
+                                console.log('📝 Text preview:', thisItemText.substring(0, 50))
+                                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+                                
+                                // Call delete function with local const (not fav.id directly)
+                                deleteFavorite(thisItemId)
+                              }}
+                              data-delete-id={thisItemId}
+                              data-delete-index={arrayIndex}
                               className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
                             >
                               Delete
