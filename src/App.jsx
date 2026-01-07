@@ -30,6 +30,9 @@ function App() {
   const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null)
   const [editingAgent, setEditingAgent] = useState(null)
   
+  // NOWA LINIA: State do zapamiętania kategorii z Power Library
+  const [pendingCategory, setPendingCategory] = useState('UI')
+  
   // NEW: Terminal output and processing state
   const [terminalOutput, setTerminalOutput] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
@@ -448,10 +451,14 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     
     setSystemStatus("Forging...")
     setTimeout(() => {
-      const finalPrompt = wrapInExpertContext(input)
+      // ZMIANA: Używa pendingCategory zamiast zawsze 'UI'
+      const finalPrompt = wrapInExpertContext(input, pendingCategory)
       setGeneratedPrompt(finalPrompt)
       setActiveTab('promptlab')
       setSystemStatus("System Ready")
+      
+      // Reset kategorii do domyślnej po wygenerowaniu
+      setPendingCategory('UI')
     }, 500)
     setCommand("")
   }
@@ -857,15 +864,34 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 text-left">
               <section>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>Power Library ({filteredKits.length})</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>
+                  Power Library ({filteredKits.length})
+                </h3>
                 <div className="space-y-4">
                   {filteredKits.map((kit, i) => (
                     <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">
                       <p className="text-[10px] font-black uppercase opacity-20 mb-2">{kit.cat}</p>
                       <textarea readOnly className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" value={kit.richText} />
                       <div className="flex gap-4">
-                        <button onClick={() => copyToClipboard(kit.richText)} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all" style={{ color: accentColor }}>Copy Expert</button>
-                        <button onClick={() => {setCommand(kit.text); setActiveTab('forge')}} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Edit in Forge</button>
+                        <button 
+                          onClick={() => copyToClipboard(kit.richText)} 
+                          className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all" 
+                          style={{ color: accentColor }}
+                        >
+                          Copy Expert
+                        </button>
+                        
+                        {/* POPRAWKA: Zapisuje zarówno text JAK I category */}
+                        <button 
+                          onClick={() => {
+                            setCommand(kit.text)
+                            setPendingCategory(kit.cat) // NOWE: Zapamiętaj kategorię!
+                            setActiveTab('forge')
+                          }} 
+                          className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
+                        >
+                          Edit in Forge
+                        </button>
                       </div>
                     </div>
                   ))}
