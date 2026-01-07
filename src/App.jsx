@@ -838,19 +838,22 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
                   ) : (
-                    // HARD FIX: Completely rewritten render logic using fav.id as key
+                    // FIXED: Use fav.id as key (not index) for stable React rendering
                     favorites.map((fav) => {
-                      // Create stable reference for this specific favorite
+                      // Create stable reference for this specific favorite item
                       const favoriteId = fav.id
                       const favoriteText = fav.text
                       
                       return (
                         <div key={favoriteId} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
-                          {/* Editable textarea */}
+                          {/* FIXED: Removed readOnly, added onChange for editing functionality */}
                           <textarea 
                             className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none focus:opacity-80 transition-opacity" 
                             value={favoriteText}
-                            onChange={(e) => updateFavoriteText(favoriteId, e.target.value)}
+                            onChange={(e) => {
+                              console.log('✏️ EDIT: Updating favorite ID:', favoriteId)
+                              updateFavoriteText(favoriteId, e.target.value)
+                            }}
                             placeholder="Edit your prompt here..."
                           />
                           <div className="flex gap-4">
@@ -863,9 +866,10 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                             >
                               Copy
                             </button>
+                            {/* FIXED: Delete button now uses favoriteId (not index) */}
                             <button 
                               onClick={() => {
-                                console.log('🗑️ DELETE BUTTON: Clicked for ID:', favoriteId)
+                                console.log('🗑️ DELETE: Clicked for ID:', favoriteId)
                                 deleteFavorite(favoriteId)
                               }} 
                               className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
