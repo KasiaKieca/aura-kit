@@ -24,7 +24,8 @@ function App() {
   const [accentColor, setAccentColor] = useState('#2dd4bf')
   const [showHelp, setShowHelp] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState("")
-  const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null) // Stan dla modalu z instrukcjami
+  const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null)
+  const [editingAgent, setEditingAgent] = useState(null) // Nowy stan dla trybu edycji
 
   // FUNKCJA Z RÓŻNYMI SZABLONAMI DLA KAŻDEJ KATEGORII
   const wrapInExpertContext = (text, category = 'UI') => {
@@ -157,18 +158,18 @@ Deliver creative brief or detailed description. Include mood board suggestions a
     { cat: "Creative", text: "midjourney prompt for a futuristic city at sunset" }
   ];
 
-  // Każdy starter używa SWOJEGO szablonu na podstawie kategorii
   const starterKits = rawKits.map(kit => ({
     ...kit,
     richText: wrapInExpertContext(kit.text, kit.cat)
   }));
 
-  // DEFINICJA AGENTÓW FIRMOWYCH
-  const companyAgents = [
+  // DEFINICJA DOMYŚLNYCH AGENTÓW (do resetu)
+  const defaultAgents = [
     {
+      id: 'backend-architect',
       role: "Senior Backend Architect",
       specialization: "Python • FastAPI • Docker",
-      color: "#8b5cf6", // fioletowy
+      color: "#8b5cf6",
       description: "Microservices expert with focus on scalable, containerized architectures. Every solution includes Dockerfile and docker-compose.yml.",
       systemPrompt: `**Agent Role:**
 You are a Senior Backend Architect specializing in Python microservices and containerized infrastructure.
@@ -201,9 +202,10 @@ Every solution MUST include:
 Provide production-ready Python code with FastAPI endpoints, proper async/await patterns, and complete Docker configuration. Include comments explaining architectural decisions.`
     },
     {
+      id: 'project-manager',
       role: "Technical Project Manager",
       specialization: "Agile • Scrum • JIRA",
-      color: "#f59e0b", // pomarańczowy
+      color: "#f59e0b",
       description: "Agile delivery specialist focused on sprint planning, roadmaps, and risk mitigation. Creates actionable JIRA stories with clear acceptance criteria.",
       systemPrompt: `**Agent Role:**
 You are a Technical Project Manager with expertise in Agile/Scrum methodologies and team coordination.
@@ -233,9 +235,10 @@ You are a Technical Project Manager with expertise in Agile/Scrum methodologies 
 Deliver structured JIRA stories with complete acceptance criteria, story point estimates, and risk analysis. Include sprint roadmap and dependency diagram when relevant.`
     },
     {
+      id: 'product-owner',
       role: "Product Owner",
       specialization: "ROI • Backlog • Acceptance Criteria",
-      color: "#10b981", // zielony
+      color: "#10b981",
       description: "Business value optimizer specializing in backlog prioritization, ROI analysis, and precise acceptance criteria aligned with business goals.",
       systemPrompt: `**Agent Role:**
 You are a Product Owner focused on maximizing business value through strategic backlog management and data-driven prioritization.
@@ -266,9 +269,10 @@ You are a Product Owner focused on maximizing business value through strategic b
 Deliver prioritized backlog items with clear business rationale, precise acceptance criteria in Given/When/Then format, success metrics, and ROI justification. Include user story mapping when relevant.`
     },
     {
+      id: 'qa-lead',
       role: "QA Automation Lead",
       specialization: "Playwright • TypeScript • E2E",
-      color: "#ec4899", // różowy
+      color: "#ec4899",
       description: "E2E testing expert using Playwright with TypeScript. Implements Page Object Model (POM) for maintainable, stable test automation.",
       systemPrompt: `**Agent Role:**
 You are a QA Automation Lead specializing in end-to-end testing with Playwright and TypeScript.
@@ -310,10 +314,21 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     }
   ];
 
+  // PRZENIESIENIE AGENTÓW DO STANU - z persystencją w localStorage
+  const [companyAgents, setCompanyAgents] = useState(() => {
+    const saved = localStorage.getItem('aura_agents_v1.0')
+    return saved ? JSON.parse(saved) : defaultAgents
+  })
+
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('aura_forge_v1.0')
     return saved ? JSON.parse(saved) : []
   })
+
+  // Persystencja agentów w localStorage
+  useEffect(() => {
+    localStorage.setItem('aura_agents_v1.0', JSON.stringify(companyAgents))
+  }, [companyAgents])
 
   useEffect(() => {
     localStorage.setItem('aura_forge_v1.0', JSON.stringify(favorites))
@@ -338,11 +353,37 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setCommand("")
   }
 
-  // ZOPTYMALIZOWANA FUNKCJA AKTYWACJI AGENTA - kopiuje do schowka i pozostaje w zakładce
   const activateAgent = (agent) => {
     copyToClipboard(agent.systemPrompt)
     setSystemStatus(`AGENT ${agent.role.toUpperCase()} INITIALIZED! READY TO PASTE`)
     setTimeout(() => setSystemStatus("System Ready"), 4000)
+  }
+
+  // FUNKCJA ZAPISYWANIA ZMIAN W AGENCIE
+  const saveAgentChanges = (updatedAgent) => {
+    setCompanyAgents(prevAgents => 
+      prevAgents.map(agent => 
+        agent.id === updatedAgent.id ? updatedAgent : agent
+      )
+    )
+    setEditingAgent(null)
+    setSystemStatus("AGENT CUSTOMIZATION SAVED!")
+    setTimeout(() => setSystemStatus("System Ready"), 3000)
+  }
+
+  // FUNKCJA RESETOWANIA AGENTA DO WARTOŚCI DOMYŚLNYCH
+  const resetAgentToDefault = (agentId) => {
+    const defaultAgent = defaultAgents.find(a => a.id === agentId)
+    if (defaultAgent) {
+      setCompanyAgents(prevAgents => 
+        prevAgents.map(agent => 
+          agent.id === agentId ? { ...defaultAgent } : agent
+        )
+      )
+      setEditingAgent(null)
+      setSystemStatus("AGENT RESET TO DEFAULT")
+      setTimeout(() => setSystemStatus("System Ready"), 3000)
+    }
   }
 
   const filteredKits = starterKits.filter(kit => 
@@ -475,13 +516,13 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
           <div className="max-w-6xl mx-auto">
             <header className="mb-12 border-b border-white/10 pb-8">
               <h2 className="text-4xl font-black uppercase italic mb-2">Company Agents</h2>
-              <p className="text-sm opacity-50 font-mono">Activate specialized AI personas - instructions copied instantly to clipboard</p>
+              <p className="text-sm opacity-50 font-mono">Activate and customize specialized AI personas for your team</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {companyAgents.map((agent, i) => (
                 <div 
-                  key={i} 
+                  key={agent.id} 
                   className="p-8 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all shadow-2xl group"
                 >
                   <div className="flex items-start justify-between mb-6">
@@ -497,20 +538,28 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                   
                   <p className="text-sm opacity-70 leading-relaxed mb-8 font-light">{agent.description}</p>
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3">
                     <button 
                       onClick={() => activateAgent(agent)}
-                      className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105 hover:shadow-2xl"
+                      className="w-full px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105 hover:shadow-2xl"
                       style={{ backgroundColor: agent.color }}
                     >
                       Activate Agent
                     </button>
-                    <button
-                      onClick={() => setSelectedAgentForPreview(agent)}
-                      className="px-4 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
-                    >
-                      View Instructions
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setSelectedAgentForPreview(agent)}
+                        className="flex-1 px-4 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                      >
+                        View Instructions
+                      </button>
+                      <button
+                        onClick={() => setEditingAgent({ ...agent })}
+                        className="flex-1 px-4 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                      >
+                        Customize Agent
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -520,9 +569,9 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
               <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">Quick Start Guide:</h3>
               <ol className="text-sm opacity-70 space-y-2 font-mono">
                 <li>1. Click "Activate Agent" - instructions are copied to clipboard instantly</li>
-                <li>2. Open Cursor/Copilot settings and paste as custom instruction</li>
+                <li>2. Use "Customize Agent" to adapt prompts for specific client requirements</li>
                 <li>3. Use "View Instructions" to preview agent's full system prompt</li>
-                <li>4. Start coding with your specialized AI assistant</li>
+                <li>4. Paste customized instructions into Cursor/Copilot settings</li>
               </ol>
             </div>
 
@@ -581,6 +630,109 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                       className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
                     >
                       Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL EDYCJI AGENTA */}
+            {editingAgent && (
+              <div 
+                className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
+                onClick={() => setEditingAgent(null)}
+              >
+                <div 
+                  className="max-w-5xl w-full max-h-[85vh] overflow-y-auto p-8 rounded-3xl bg-slate-900 border-2 shadow-2xl"
+                  style={{ borderColor: editingAgent.color }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-3xl font-black mb-2" style={{ color: editingAgent.color }}>
+                        Customize {editingAgent.role}
+                      </h3>
+                      <p className="text-xs font-mono uppercase tracking-widest opacity-40">
+                        Adapt agent for client-specific requirements
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setEditingAgent(null)}
+                      className="p-2 rounded-xl hover:bg-white/10 transition-all"
+                    >
+                      <IconClose color="#fff" />
+                    </button>
+                  </div>
+
+                  {/* FORMULARZ EDYCJI */}
+                  <div className="space-y-6">
+                    {/* Specialization */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
+                        Specialization
+                      </label>
+                      <input
+                        type="text"
+                        value={editingAgent.specialization}
+                        onChange={(e) => setEditingAgent({ ...editingAgent, specialization: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm font-mono transition-all"
+                        placeholder="e.g., Python • FastAPI • Docker"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
+                        Description
+                      </label>
+                      <textarea
+                        value={editingAgent.description}
+                        onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm resize-none transition-all"
+                        rows="3"
+                        placeholder="Brief description of agent's expertise..."
+                      />
+                    </div>
+
+                    {/* System Prompt - duże pole tekstowe */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
+                        System Prompt
+                      </label>
+                      <div className="p-4 rounded-xl bg-slate-950 border border-white/10">
+                        <textarea
+                          value={editingAgent.systemPrompt}
+                          onChange={(e) => setEditingAgent({ ...editingAgent, systemPrompt: e.target.value })}
+                          className="w-full h-[400px] bg-transparent border-none focus:outline-none text-xs font-mono opacity-80 resize-none"
+                          placeholder="Paste client-specific guidelines, coding standards, or custom instructions here..."
+                        />
+                      </div>
+                      <p className="text-[9px] opacity-40 mt-2 font-mono">
+                        💡 Tip: Paste client's coding standards, architectural patterns, or compliance requirements
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Przyciski akcji */}
+                  <div className="mt-8 flex gap-4">
+                    <button 
+                      onClick={() => saveAgentChanges(editingAgent)}
+                      className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
+                      style={{ backgroundColor: editingAgent.color }}
+                    >
+                      Save Changes
+                    </button>
+                    <button 
+                      onClick={() => resetAgentToDefault(editingAgent.id)}
+                      className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-yellow-500/50 text-yellow-500/70 hover:bg-yellow-500/10 transition-all"
+                    >
+                      Reset to Default
+                    </button>
+                    <button 
+                      onClick={() => setEditingAgent(null)}
+                      className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                    >
+                      Cancel
                     </button>
                   </div>
                 </div>
