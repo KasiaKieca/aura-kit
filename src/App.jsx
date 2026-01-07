@@ -88,9 +88,34 @@ function App() {
   }
 
   const sendToForge = (text) => {
-    setCommand(text)
-    setActiveTab('forge')
-    setSystemStatus("Awaiting Modification...")
+    setSystemStatus("Forging...")
+    
+    // Generujemy profesjonalny prompt tak jak w handleAction
+    setTimeout(() => {
+      const professionalPrompt = `**System Context:**
+You are a Senior React Developer & Vibe Coder specializing in modern, aesthetically refined component design.
+
+**Technical Stack:**
+- Tailwind CSS v4
+- Framer Motion for animations
+- Lucide React for icons
+
+**Component Specs:**
+- Apply glassmorphism effect using backdrop-blur
+- Use neon edges with accent color ${accentColor}
+- Ensure full responsiveness across mobile, tablet, and desktop
+- Implement smooth transitions and micro-interactions
+
+**User Intent:**
+${text} - zastosuj najlepsze praktyki UX dla tego elementu.
+
+**Output Format:**
+Deliver only clean, production-ready component code without explanations or comments.`
+      
+      setGeneratedPrompt(professionalPrompt)
+      setActiveTab('promptlab')
+      setSystemStatus("System Ready")
+    }, 500)
   }
 
   const handleAction = () => {
