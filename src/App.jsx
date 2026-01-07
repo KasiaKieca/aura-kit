@@ -21,13 +21,21 @@ function App() {
   const [command, setCommand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [systemStatus, setSystemStatus] = useState("System Ready")
-  const [accentColor, setAccentColor] = useState('#2dd4bf')
   const [showHelp, setShowHelp] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState("")
   const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null)
-  const [editingAgent, setEditingAgent] = useState(null) // Nowy stan dla trybu edycji
+  const [editingAgent, setEditingAgent] = useState(null)
+  
+  // NEW STATE: Active Agent Context for Agent Mode
+  const [activeAgentContext, setActiveAgentContext] = useState(null)
+  
+  // DEFAULT ACCENT COLOR
+  const defaultAccentColor = '#2dd4bf'
+  
+  // DYNAMIC ACCENT COLOR - changes when agent is active
+  const accentColor = activeAgentContext ? activeAgentContext.color : defaultAccentColor
 
-  // FUNKCJA Z RÓŻNYMI SZABLONAMI DLA KAŻDEJ KATEGORII
+  // FUNCTION WITH DIFFERENT TEMPLATES FOR EACH CATEGORY
   const wrapInExpertContext = (text, category = 'UI') => {
     const templates = {
       UI: `**System Context:**
@@ -46,7 +54,7 @@ You are a Senior UI/UX Designer & Frontend Developer specializing in modern web 
 - Apply proper spacing using Tailwind's spacing scale
 
 **User Intent:**
-${text} - zaprojektuj z naciskiem na estetykę i user experience.
+${text} - design with emphasis on aesthetics and user experience.
 
 **Output Format:**
 Deliver clean React component code with Tailwind classes. No explanations, only production-ready code.`,
@@ -69,7 +77,7 @@ You are a Senior Software Engineer specializing in clean architecture, SOLID pri
 - Include accessibility features (ARIA labels, keyboard navigation)
 
 **User Intent:**
-${text} - zaimplementuj zgodnie z najlepszymi praktykami clean code.
+${text} - implement according to clean code best practices.
 
 **Output Format:**
 Deliver TypeScript code with proper types and error handling. Include usage example in comments.`,
@@ -92,7 +100,7 @@ You are a Senior Data Engineer specializing in SQL optimization, data transforma
 - Add data quality checks
 
 **User Intent:**
-${text} - zoptymalizuj pod kątem wydajności i czytelności.
+${text} - optimize for performance and readability.
 
 **Output Format:**
 Deliver SQL queries or Python code with performance notes. Include sample output structure.`,
@@ -115,7 +123,7 @@ You are a Senior Content Strategist & Copywriter specializing in conversion-focu
 - Ensure brand voice consistency
 
 **User Intent:**
-${text} - stwórz z naciskiem na engagement i konwersję.
+${text} - create with emphasis on engagement and conversion.
 
 **Output Format:**
 Deliver copy with character counts and formatting notes. Include A/B testing suggestions.`,
@@ -138,7 +146,7 @@ You are a Senior Creative Director specializing in visual storytelling, concept 
 - Add cultural references when relevant
 
 **User Intent:**
-${text} - zaprojektuj z artystyczną wizją i attention to detail.
+${text} - design with artistic vision and attention to detail.
 
 **Output Format:**
 Deliver creative brief or detailed description. Include mood board suggestions and reference examples.`
@@ -163,7 +171,7 @@ Deliver creative brief or detailed description. Include mood board suggestions a
     richText: wrapInExpertContext(kit.text, kit.cat)
   }));
 
-  // DEFINICJA DOMYŚLNYCH AGENTÓW (do resetu)
+  // DEFAULT AGENTS DEFINITION (for reset functionality)
   const defaultAgents = [
     {
       id: 'backend-architect',
@@ -314,7 +322,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     }
   ];
 
-  // PRZENIESIENIE AGENTÓW DO STANU - z persystencją w localStorage
+  // AGENTS STATE - with localStorage persistence
   const [companyAgents, setCompanyAgents] = useState(() => {
     const saved = localStorage.getItem('aura_agents_v1.0')
     return saved ? JSON.parse(saved) : defaultAgents
@@ -325,7 +333,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     return saved ? JSON.parse(saved) : []
   })
 
-  // Persystencja agentów w localStorage
+  // Persist agents in localStorage
   useEffect(() => {
     localStorage.setItem('aura_agents_v1.0', JSON.stringify(companyAgents))
   }, [companyAgents])
@@ -340,26 +348,62 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
+  // UPDATED handleAction - integration with Agent Mode
   const handleAction = (customText) => {
     const input = customText || command.trim()
     if (!input) return
     
     setSystemStatus("Forging...")
     setTimeout(() => {
-      setGeneratedPrompt(wrapInExpertContext(input))
+      let finalPrompt = ""
+      
+      // If agent is active, prepend their systemPrompt
+      if (activeAgentContext) {
+        finalPrompt = `${activeAgentContext.systemPrompt}
+
+---
+
+**Additional User Request:**
+${input}
+
+**Execution Instructions:**
+Apply the above agent expertise to fulfill this specific user request. Maintain all architectural principles and deliverable standards defined in the agent role.`
+      } else {
+        // Standard flow without agent
+        finalPrompt = wrapInExpertContext(input)
+      }
+      
+      setGeneratedPrompt(finalPrompt)
       setActiveTab('promptlab')
       setSystemStatus("System Ready")
     }, 500)
     setCommand("")
   }
 
+  // UPDATED activateAgent - Agent Mode activation
   const activateAgent = (agent) => {
+    // Set active agent in context
+    setActiveAgentContext(agent)
+    
+    // Copy system prompt to clipboard (for convenience)
     copyToClipboard(agent.systemPrompt)
-    setSystemStatus(`AGENT ${agent.role.toUpperCase()} INITIALIZED! READY TO PASTE`)
+    
+    // Redirect to Idea Forge
+    setActiveTab('forge')
+    
+    // Visual feedback
+    setSystemStatus(`AGENT MODE: ${agent.role.toUpperCase()} ACTIVATED!`)
     setTimeout(() => setSystemStatus("System Ready"), 4000)
   }
 
-  // FUNKCJA ZAPISYWANIA ZMIAN W AGENCIE
+  // FUNCTION TO EXIT AGENT MODE
+  const exitAgentMode = () => {
+    setActiveAgentContext(null)
+    setSystemStatus("AGENT MODE DEACTIVATED")
+    setTimeout(() => setSystemStatus("System Ready"), 2000)
+  }
+
+  // FUNCTION TO SAVE AGENT CHANGES
   const saveAgentChanges = (updatedAgent) => {
     setCompanyAgents(prevAgents => 
       prevAgents.map(agent => 
@@ -371,7 +415,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 3000)
   }
 
-  // FUNKCJA RESETOWANIA AGENTA DO WARTOŚCI DOMYŚLNYCH
+  // FUNCTION TO RESET AGENT TO DEFAULT VALUES
   const resetAgentToDefault = (agentId) => {
     const defaultAgent = defaultAgents.find(a => a.id === agentId)
     if (defaultAgent) {
@@ -415,7 +459,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
       </aside>
 
       <main className="flex-1 p-8 overflow-y-auto">
-        {/* Status bar - widoczny globalnie */}
+        {/* Global status bar */}
         <div className="fixed top-8 right-8 z-50">
           <p 
             className="text-[10px] font-mono uppercase tracking-[0.3em] px-6 py-3 rounded-xl bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl transition-all"
@@ -430,17 +474,74 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
 
         {activeTab === 'forge' && (
           <div className="h-full flex flex-col items-center justify-center max-w-4xl mx-auto text-center">
+            {/* AGENT MODE BADGE - displayed when agent is active */}
+            {activeAgentContext && (
+              <div 
+                className="mb-8 px-6 py-3 rounded-2xl border-2 backdrop-blur-xl animate-pulse"
+                style={{ 
+                  backgroundColor: `${activeAgentContext.color}20`,
+                  borderColor: activeAgentContext.color,
+                  boxShadow: `0 0 30px ${activeAgentContext.color}40`
+                }}
+              >
+                <p className="text-xs font-black uppercase tracking-[0.3em]" style={{ color: activeAgentContext.color }}>
+                  🤖 ACTIVE MODE: {activeAgentContext.role}
+                </p>
+                <p className="text-[9px] opacity-60 font-mono mt-1">
+                  {activeAgentContext.specialization}
+                </p>
+              </div>
+            )}
+
             <h1 className="text-8xl font-black mb-4 uppercase tracking-tighter italic" style={{ textShadow: `0 0 40px ${accentColor}40` }}>Aura<span style={{ color: accentColor }}>kit</span></h1>
             <p className="text-[10px] font-mono opacity-40 uppercase tracking-[0.5em] mb-12 h-6" style={{ color: systemStatus !== "System Ready" ? accentColor : "white" }}>{systemStatus}</p>
+            
             <div className="w-full max-w-2xl flex gap-3 mb-6">
-              <input type="text" placeholder="Describe your idea..." className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-5 text-lg font-mono focus:outline-none focus:border-white/20 transition-all shadow-inner" value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAction()} />
-              <button onClick={() => handleAction()} className="px-8 rounded-2xl font-black uppercase text-xs text-slate-900 shadow-xl transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Create</button>
-              <button onClick={() => setShowHelp(!showHelp)} className="w-16 rounded-2xl border font-bold text-xl opacity-40 hover:opacity-100 flex items-center justify-center shadow-lg transition-all" style={{ borderColor: accentColor + '40', color: accentColor }}>?</button>
+              <input 
+                type="text" 
+                placeholder={activeAgentContext ? `Describe task for ${activeAgentContext.role}...` : "Describe your idea..."} 
+                className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-5 text-lg font-mono focus:outline-none focus:border-white/20 transition-all shadow-inner" 
+                style={{ borderColor: activeAgentContext ? `${accentColor}40` : 'rgba(255,255,255,0.1)' }}
+                value={command} 
+                onChange={(e) => setCommand(e.target.value)} 
+                onKeyDown={(e) => e.key === 'Enter' && handleAction()} 
+              />
+              <button 
+                onClick={() => handleAction()} 
+                className="px-8 rounded-2xl font-black uppercase text-xs text-slate-900 shadow-xl transition-all hover:scale-105" 
+                style={{ backgroundColor: accentColor }}
+              >
+                {activeAgentContext ? 'Execute' : 'Create'}
+              </button>
+              <button 
+                onClick={() => setShowHelp(!showHelp)} 
+                className="w-16 rounded-2xl border font-bold text-xl opacity-40 hover:opacity-100 flex items-center justify-center shadow-lg transition-all" 
+                style={{ borderColor: accentColor + '40', color: accentColor }}
+              >
+                ?
+              </button>
             </div>
+
+            {/* EXIT AGENT MODE BUTTON - visible only when agent is active */}
+            {activeAgentContext && (
+              <button
+                onClick={exitAgentMode}
+                className="mb-6 px-6 py-3 rounded-xl font-bold uppercase text-[10px] border-2 hover:bg-white/10 transition-all"
+                style={{ borderColor: accentColor, color: accentColor }}
+              >
+                Exit Agent Mode
+              </button>
+            )}
+
             {showHelp && (
               <div className="mt-4 w-full max-w-2xl p-6 bg-white/5 border border-white/10 rounded-2xl font-mono text-[11px] opacity-70 animate-in slide-in-from-top-4">
                 <p className="mb-2 uppercase font-black" style={{ color: accentColor }}>Manual:</p>
                 <p>/vibe [color] • /status • Type idea to trigger Forge</p>
+                {activeAgentContext && (
+                  <p className="mt-4 text-[10px] opacity-50">
+                    💡 Agent Mode: Your prompts are automatically enhanced with {activeAgentContext.role} expertise
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -516,14 +617,14 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
           <div className="max-w-6xl mx-auto">
             <header className="mb-12 border-b border-white/10 pb-8">
               <h2 className="text-4xl font-black uppercase italic mb-2">Company Agents</h2>
-              <p className="text-sm opacity-50 font-mono">Activate and customize specialized AI personas for your team</p>
+              <p className="text-sm opacity-50 font-mono">Activate specialized AI personas in Idea Forge workflow</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {companyAgents.map((agent, i) => (
+              {companyAgents.map((agent) => (
                 <div 
                   key={agent.id} 
-                  className="p-8 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all shadow-2xl group"
+                  className="p-8 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all shadow-2xl group"
                 >
                   <div className="flex items-start justify-between mb-6">
                     <div>
@@ -544,7 +645,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                       className="w-full px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105 hover:shadow-2xl"
                       style={{ backgroundColor: agent.color }}
                     >
-                      Activate Agent
+                      Activate in Forge
                     </button>
                     <div className="flex gap-3">
                       <button
@@ -568,14 +669,14 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
             <div className="mt-16 p-8 rounded-2xl bg-white/5 border border-white/10">
               <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">Quick Start Guide:</h3>
               <ol className="text-sm opacity-70 space-y-2 font-mono">
-                <li>1. Click "Activate Agent" - instructions are copied to clipboard instantly</li>
-                <li>2. Use "Customize Agent" to adapt prompts for specific client requirements</li>
-                <li>3. Use "View Instructions" to preview agent's full system prompt</li>
-                <li>4. Paste customized instructions into Cursor/Copilot settings</li>
+                <li>1. Click "Activate in Forge" - agent loads into Idea Forge with their expertise</li>
+                <li>2. Interface changes to agent's color theme</li>
+                <li>3. Type your task - it will be automatically enhanced with agent's system prompt</li>
+                <li>4. Use "Customize Agent" to adapt prompts for specific client requirements</li>
               </ol>
             </div>
 
-            {/* MODAL Z PODGLĄDEM INSTRUKCJI AGENTA */}
+            {/* AGENT INSTRUCTIONS PREVIEW MODAL */}
             {selectedAgentForPreview && (
               <div 
                 className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
@@ -617,7 +718,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                   <div className="mt-6 flex gap-4">
                     <button 
                       onClick={() => {
-                        activateAgent(selectedAgentForPreview);
+                        copyToClipboard(selectedAgentForPreview.systemPrompt);
                         setSelectedAgentForPreview(null);
                       }}
                       className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
@@ -636,7 +737,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
               </div>
             )}
 
-            {/* MODAL EDYCJI AGENTA */}
+            {/* AGENT EDITING MODAL */}
             {editingAgent && (
               <div 
                 className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
@@ -664,7 +765,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                     </button>
                   </div>
 
-                  {/* FORMULARZ EDYCJI */}
+                  {/* EDITING FORM */}
                   <div className="space-y-6">
                     {/* Specialization */}
                     <div>
@@ -694,7 +795,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                       />
                     </div>
 
-                    {/* System Prompt - duże pole tekstowe */}
+                    {/* System Prompt - large textarea */}
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
                         System Prompt
@@ -713,7 +814,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
                     </div>
                   </div>
 
-                  {/* Przyciski akcji */}
+                  {/* Action buttons */}
                   <div className="mt-8 flex gap-4">
                     <button 
                       onClick={() => saveAgentChanges(editingAgent)}
