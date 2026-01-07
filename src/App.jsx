@@ -428,10 +428,15 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     console.log('✏️ EDIT: Updating favorite ID:', favoriteId)
     
     setFavorites(prevFavorites => {
+      // Aktualizacja stanu
       const updated = prevFavorites.map(fav => 
         fav.id === favoriteId ? { ...fav, text: newText } : fav
       )
-      console.log('✅ EDIT: Text updated successfully')
+      
+      // CRITICAL FIX: Natychmiastowy zapis do localStorage
+      localStorage.setItem('aura_forge_v1.0', JSON.stringify(updated))
+      console.log('✅ EDIT: Text updated and synced to localStorage')
+      
       return updated
     })
   }
