@@ -15,10 +15,14 @@ const IconAbout = ({ color }) => (
 const IconClose = ({ color }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 )
+const IconTerminal = ({ color }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+)
 
 function App() {
   const [activeTab, setActiveTab] = useState('forge')
   const [command, setCommand] = useState("")
+  const [agentCommand, setAgentCommand] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [systemStatus, setSystemStatus] = useState("System Ready")
   const [showHelp, setShowHelp] = useState(false)
@@ -26,16 +30,16 @@ function App() {
   const [selectedAgentForPreview, setSelectedAgentForPreview] = useState(null)
   const [editingAgent, setEditingAgent] = useState(null)
   
-  // NEW STATE: Active Agent Context for Agent Mode
+  // Active Agent Context for Agent Mode
   const [activeAgentContext, setActiveAgentContext] = useState(null)
   
-  // DEFAULT ACCENT COLOR
+  // Default accent color
   const defaultAccentColor = '#2dd4bf'
   
-  // DYNAMIC ACCENT COLOR - changes when agent is active
+  // Dynamic accent color - changes when agent is active
   const accentColor = activeAgentContext ? activeAgentContext.color : defaultAccentColor
 
-  // FUNCTION WITH DIFFERENT TEMPLATES FOR EACH CATEGORY
+  // Function with different templates for each category
   const wrapInExpertContext = (text, category = 'UI') => {
     const templates = {
       UI: `**System Context:**
@@ -171,7 +175,7 @@ Deliver creative brief or detailed description. Include mood board suggestions a
     richText: wrapInExpertContext(kit.text, kit.cat)
   }));
 
-  // DEFAULT AGENTS DEFINITION (for reset functionality)
+  // Default agents definition (for reset functionality)
   const defaultAgents = [
     {
       id: 'backend-architect',
@@ -322,7 +326,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     }
   ];
 
-  // AGENTS STATE - with localStorage persistence
+  // Agents state with localStorage persistence
   const [companyAgents, setCompanyAgents] = useState(() => {
     const saved = localStorage.getItem('aura_agents_v1.0')
     return saved ? JSON.parse(saved) : defaultAgents
@@ -333,53 +337,35 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     return saved ? JSON.parse(saved) : []
   })
 
-  // Persist agents in localStorage
+  // Persist agents in localStorage on change
   useEffect(() => {
     localStorage.setItem('aura_agents_v1.0', JSON.stringify(companyAgents))
   }, [companyAgents])
 
+  // Persist favorites in localStorage on change
   useEffect(() => {
     localStorage.setItem('aura_forge_v1.0', JSON.stringify(favorites))
   }, [favorites])
 
-  // Generate unique ID for favorite prompts - extended version with double randomization
+  // Generate unique ID for favorite prompts with triple randomization
   const generateUniqueId = () => {
-    // Additional randomization for 100% uniqueness guarantee
     return `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 5)}`
   }
 
+  // Copy text to clipboard with status feedback
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
     setSystemStatus("Clipboard Updated")
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // Delete favorite function - FIXED with extended debug logs
+  // Delete favorite prompt - uses functional update pattern
   const deleteFavorite = (favoriteId) => {
-    console.log('🗑️ DELETE CLICKED - Target ID:', favoriteId)
-    console.log('🗑️ Current favorites state:', favorites)
+    console.log('🗑️ DELETE: Targeting ID:', favoriteId)
     
-    // Use functional update to ensure latest state
     setFavorites(prevFavorites => {
-      console.log('📋 Inside setFavorites - prevFavorites length:', prevFavorites.length)
-      console.log('📋 All current IDs:', prevFavorites.map(f => ({ id: f.id, preview: f.text.substring(0, 30) })))
-      console.log('📋 Looking for ID to delete:', favoriteId)
-      
-      // Find item to be deleted (for debugging)
-      const toDelete = prevFavorites.find(f => f.id === favoriteId)
-      console.log('❌ Found item to delete:', toDelete ? { id: toDelete.id, preview: toDelete.text.substring(0, 50) } : 'NOT FOUND!')
-      
-      const newFavorites = prevFavorites.filter(f => {
-        const keep = f.id !== favoriteId
-        if (!keep) {
-          console.log('🚫 REMOVING:', { id: f.id, preview: f.text.substring(0, 50) })
-        }
-        return keep
-      })
-      
-      console.log('✅ New favorites after filter:', newFavorites.length)
-      console.log('📊 Count change: before =', prevFavorites.length, ', after =', newFavorites.length)
-      
+      const newFavorites = prevFavorites.filter(f => f.id !== favoriteId)
+      console.log('✅ DELETE: Removed successfully. New count:', newFavorites.length)
       return newFavorites
     })
     
@@ -387,31 +373,27 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // UPDATED handleAction function - integration with Agent Mode
+  // Update favorite text - allows editing in collection
+  const updateFavoriteText = (favoriteId, newText) => {
+    console.log('✏️ EDIT: Updating favorite ID:', favoriteId)
+    
+    setFavorites(prevFavorites => {
+      const updated = prevFavorites.map(fav => 
+        fav.id === favoriteId ? { ...fav, text: newText } : fav
+      )
+      console.log('✅ EDIT: Text updated successfully')
+      return updated
+    })
+  }
+
+  // Handle action in Idea Forge (standard mode)
   const handleAction = (customText) => {
     const input = customText || command.trim()
     if (!input) return
     
     setSystemStatus("Forging...")
     setTimeout(() => {
-      let finalPrompt = ""
-      
-      // If agent is active, prepend their systemPrompt
-      if (activeAgentContext) {
-        finalPrompt = `${activeAgentContext.systemPrompt}
-
----
-
-**Additional User Request:**
-${input}
-
-**Execution Instructions:**
-Apply the above agent expertise to fulfill this specific user request. Maintain all architectural principles and deliverable standards defined in the agent role.`
-      } else {
-        // Standard flow without agent
-        finalPrompt = wrapInExpertContext(input)
-      }
-      
+      const finalPrompt = wrapInExpertContext(input)
       setGeneratedPrompt(finalPrompt)
       setActiveTab('promptlab')
       setSystemStatus("System Ready")
@@ -419,38 +401,59 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
     setCommand("")
   }
 
-  // UPDATED activateAgent - Agent Mode activation
-  const activateAgent = (agent) => {
-    // Set active agent in context
-    setActiveAgentContext(agent)
+  // Handle action in Agent Terminal (agent mode)
+  const handleAgentAction = () => {
+    const input = agentCommand.trim()
+    if (!input || !activeAgentContext) return
     
-    // Copy system prompt to clipboard (for convenience)
+    setSystemStatus("Agent Processing...")
+    setTimeout(() => {
+      const finalPrompt = `${activeAgentContext.systemPrompt}
+
+---
+
+**User Request:**
+${input}
+
+**Execution Instructions:**
+Apply the above agent expertise to fulfill this specific user request. Maintain all architectural principles and deliverable standards defined in the agent role.`
+      
+      setGeneratedPrompt(finalPrompt)
+      setActiveTab('promptlab')
+      setSystemStatus("System Ready")
+    }, 500)
+    setAgentCommand("")
+  }
+
+  // Activate agent - FIXED: now switches to Agent Terminal tab
+  const activateAgent = (agent) => {
+    setActiveAgentContext(agent)
     copyToClipboard(agent.systemPrompt)
     
-    // Redirect to Idea Forge
-    setActiveTab('forge')
+    // FIXED: Redirect to Agent Terminal instead of Idea Forge
+    setActiveTab('terminal')
     
-    // Visual feedback
     setSystemStatus(`AGENT MODE: ${agent.role.toUpperCase()} ACTIVATED!`)
     setTimeout(() => setSystemStatus("System Ready"), 4000)
   }
 
-  // FUNCTION TO EXIT AGENT MODE
+  // Exit Agent Mode and return to default state
   const exitAgentMode = () => {
     setActiveAgentContext(null)
+    setActiveTab('forge')
     setSystemStatus("AGENT MODE DEACTIVATED")
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // FUNCTION TO SAVE AGENT CHANGES - FIXED to properly update state
+  // Save agent customization changes
   const saveAgentChanges = (updatedAgent) => {
-    console.log('💾 Saving agent changes:', updatedAgent)
+    console.log('💾 SAVE AGENT: Saving changes for', updatedAgent.id)
     
     setCompanyAgents(prevAgents => {
       const updated = prevAgents.map(agent => 
         agent.id === updatedAgent.id ? { ...updatedAgent } : agent
       )
-      console.log('✅ Updated agents array:', updated)
+      console.log('✅ SAVE AGENT: Changes saved successfully')
       return updated
     })
     
@@ -459,11 +462,11 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
     setTimeout(() => setSystemStatus("System Ready"), 3000)
   }
 
-  // FUNCTION TO RESET AGENT TO DEFAULT VALUES
+  // Reset agent to default configuration
   const resetAgentToDefault = (agentId) => {
     const defaultAgent = defaultAgents.find(a => a.id === agentId)
     if (defaultAgent) {
-      console.log('🔄 Resetting agent to default:', agentId)
+      console.log('🔄 RESET AGENT: Resetting to default:', agentId)
       
       setCompanyAgents(prevAgents => 
         prevAgents.map(agent => 
@@ -476,6 +479,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
     }
   }
 
+  // Filter starter kits based on search query
   const filteredKits = starterKits.filter(kit => 
     kit.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
     kit.cat.toLowerCase().includes(searchQuery.toLowerCase())
@@ -495,6 +499,14 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
           <button onClick={() => setActiveTab('promptlab')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'promptlab' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
             <IconLab color={activeTab === 'promptlab' ? accentColor : '#fff'} /> Prompt Lab
           </button>
+          
+          {/* NEW: Agent Terminal Tab - only visible when agent is active */}
+          {activeAgentContext && (
+            <button onClick={() => setActiveTab('terminal')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'terminal' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
+              <IconTerminal color={activeTab === 'terminal' ? accentColor : '#fff'} /> Agent Terminal
+            </button>
+          )}
+          
           <button onClick={() => setActiveTab('agents')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'agents' ? 'bg-white/10 border-l-4' : 'opacity-40 hover:opacity-100'}`} style={{ borderColor: accentColor }}>
             <IconAgents color={activeTab === 'agents' ? accentColor : '#fff'} /> Agents
           </button>
@@ -518,36 +530,17 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
           </p>
         </div>
 
+        {/* Idea Forge Tab */}
         {activeTab === 'forge' && (
           <div className="h-full flex flex-col items-center justify-center max-w-4xl mx-auto text-center">
-            {/* AGENT MODE BADGE - displayed when agent is active */}
-            {activeAgentContext && (
-              <div 
-                className="mb-8 px-6 py-3 rounded-2xl border-2 backdrop-blur-xl animate-pulse"
-                style={{ 
-                  backgroundColor: `${activeAgentContext.color}20`,
-                  borderColor: activeAgentContext.color,
-                  boxShadow: `0 0 30px ${activeAgentContext.color}40`
-                }}
-              >
-                <p className="text-xs font-black uppercase tracking-[0.3em]" style={{ color: activeAgentContext.color }}>
-                  🤖 ACTIVE MODE: {activeAgentContext.role}
-                </p>
-                <p className="text-[9px] opacity-60 font-mono mt-1">
-                  {activeAgentContext.specialization}
-                </p>
-              </div>
-            )}
-
             <h1 className="text-8xl font-black mb-4 uppercase tracking-tighter italic" style={{ textShadow: `0 0 40px ${accentColor}40` }}>Aura<span style={{ color: accentColor }}>kit</span></h1>
             <p className="text-[10px] font-mono opacity-40 uppercase tracking-[0.5em] mb-12 h-6" style={{ color: systemStatus !== "System Ready" ? accentColor : "white" }}>{systemStatus}</p>
             
             <div className="w-full max-w-2xl flex gap-3 mb-6">
               <input 
                 type="text" 
-                placeholder={activeAgentContext ? `Describe task for ${activeAgentContext.role}...` : "Describe your idea..."} 
+                placeholder="Describe your idea..." 
                 className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-5 text-lg font-mono focus:outline-none focus:border-white/20 transition-all shadow-inner" 
-                style={{ borderColor: activeAgentContext ? `${accentColor}40` : 'rgba(255,255,255,0.1)' }}
                 value={command} 
                 onChange={(e) => setCommand(e.target.value)} 
                 onKeyDown={(e) => e.key === 'Enter' && handleAction()} 
@@ -557,7 +550,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                 className="px-8 rounded-2xl font-black uppercase text-xs text-slate-900 shadow-xl transition-all hover:scale-105" 
                 style={{ backgroundColor: accentColor }}
               >
-                {activeAgentContext ? 'Execute' : 'Create'}
+                Create
               </button>
               <button 
                 onClick={() => setShowHelp(!showHelp)} 
@@ -568,31 +561,108 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
               </button>
             </div>
 
-            {/* EXIT AGENT MODE BUTTON - visible only when agent is active */}
-            {activeAgentContext && (
-              <button
-                onClick={exitAgentMode}
-                className="mb-6 px-6 py-3 rounded-xl font-bold uppercase text-[10px] border-2 hover:bg-white/10 transition-all"
-                style={{ borderColor: accentColor, color: accentColor }}
-              >
-                Exit Agent Mode
-              </button>
-            )}
-
             {showHelp && (
               <div className="mt-4 w-full max-w-2xl p-6 bg-white/5 border border-white/10 rounded-2xl font-mono text-[11px] opacity-70 animate-in slide-in-from-top-4">
-                <p className="mb-2 uppercase font-black" style={{ color: accentColor }}>Manual:</p>
-                <p>/vibe [color] • /status • Type idea to trigger Forge</p>
-                {activeAgentContext && (
-                  <p className="mt-4 text-[10px] opacity-50">
-                    💡 Agent Mode: Your prompts are automatically enhanced with {activeAgentContext.role} expertise
-                  </p>
-                )}
+                <p className="mb-2 uppercase font-black" style={{ color: accentColor }}>Quick Guide:</p>
+                <p>Type your idea to generate expert prompts. Use Agents tab to activate specialized AI personas for advanced workflows.</p>
               </div>
             )}
           </div>
         )}
 
+        {/* NEW: Agent Terminal Tab - dedicated interface for active agent */}
+        {activeTab === 'terminal' && activeAgentContext && (
+          <div className="max-w-6xl mx-auto">
+            <header className="mb-12 border-b border-white/10 pb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-4xl font-black uppercase italic mb-2" style={{ color: activeAgentContext.color }}>
+                    Agent Terminal
+                  </h2>
+                  <p className="text-sm opacity-50 font-mono">
+                    Active: {activeAgentContext.role} • {activeAgentContext.specialization}
+                  </p>
+                </div>
+                <button
+                  onClick={exitAgentMode}
+                  className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] border-2 hover:bg-white/10 transition-all"
+                  style={{ borderColor: activeAgentContext.color, color: activeAgentContext.color }}
+                >
+                  Exit Agent Mode
+                </button>
+              </div>
+            </header>
+
+            {/* Agent status badge */}
+            <div 
+              className="mb-8 p-6 rounded-2xl border-2 backdrop-blur-xl"
+              style={{ 
+                backgroundColor: `${activeAgentContext.color}10`,
+                borderColor: activeAgentContext.color,
+                boxShadow: `0 0 30px ${activeAgentContext.color}40`
+              }}
+            >
+              <div className="flex items-start gap-4">
+                <div 
+                  className="w-4 h-4 rounded-full animate-pulse mt-1" 
+                  style={{ backgroundColor: activeAgentContext.color, boxShadow: `0 0 20px ${activeAgentContext.color}` }}
+                ></div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-[0.2em] mb-2" style={{ color: activeAgentContext.color }}>
+                    🤖 {activeAgentContext.role} Online
+                  </p>
+                  <p className="text-xs opacity-70 leading-relaxed">
+                    {activeAgentContext.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Agent input interface */}
+            <div className="p-8 rounded-3xl bg-slate-900 border-2 shadow-2xl" style={{ borderColor: activeAgentContext.color }}>
+              <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">Agent Input:</h3>
+              <textarea 
+                placeholder={`Describe your task for ${activeAgentContext.role}...`}
+                className="w-full h-64 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-white/30 transition-all resize-none mb-6" 
+                value={agentCommand}
+                onChange={(e) => setAgentCommand(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleAgentAction()
+                  }
+                }}
+              />
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleAgentAction}
+                  className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
+                  style={{ backgroundColor: activeAgentContext.color }}
+                >
+                  Generate with Agent
+                </button>
+                <button
+                  onClick={() => setActiveTab('promptlab')}
+                  className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
+                >
+                  View Collection
+                </button>
+              </div>
+              <p className="text-[9px] opacity-40 mt-3 font-mono text-center">
+                💡 Tip: Press Ctrl+Enter to generate
+              </p>
+            </div>
+
+            {/* Agent system prompt preview */}
+            <div className="mt-8 p-6 rounded-2xl bg-white/5 border border-white/10">
+              <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">System Configuration:</h3>
+              <pre className="text-[10px] font-mono opacity-60 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                {activeAgentContext.systemPrompt}
+              </pre>
+            </div>
+          </div>
+        )}
+
+        {/* Prompt Lab Tab */}
         {activeTab === 'promptlab' && (
           <div className="max-w-6xl mx-auto">
             <header className="mb-12 flex justify-between items-end border-b border-white/10 pb-8">
@@ -609,22 +679,13 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                  <div className="flex gap-4">
                   <button onClick={() => copyToClipboard(generatedPrompt)} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Copy Result</button>
                   <button onClick={() => {
-                    // Generate unique ID with extended randomization
                     const newFav = { 
                       id: generateUniqueId(), 
                       text: generatedPrompt,
                       timestamp: Date.now()
                     };
-                    console.log('💾 SAVING new favorite with ID:', newFav.id)
                     
-                    // Use functional update pattern
-                    setFavorites(prevFavorites => {
-                      const updated = [newFav, ...prevFavorites]
-                      console.log('📦 Updated favorites count:', updated.length)
-                      console.log('📦 All IDs after save:', updated.map(f => f.id))
-                      return updated
-                    })
-                    
+                    setFavorites(prevFavorites => [newFav, ...prevFavorites])
                     setGeneratedPrompt("");
                     setSystemStatus("Saved to Collection!")
                     setTimeout(() => setSystemStatus("System Ready"), 2000)
@@ -649,6 +710,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                   ))}
                 </div>
               </section>
+              
               <section>
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>Your Collection ({favorites.length})</h3>
                 <div className="space-y-4">
@@ -658,60 +720,31 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
                   ) : (
-                    favorites.map((fav, index) => {
-                      // KEY: Create local variables in each map() iteration scope
-                      // This ensures closure in onClick always has the correct value
-                      const itemId = fav.id
-                      const itemText = fav.text
-                      const itemTimestamp = fav.timestamp
-                      
-                      // Debug log - can be removed after verification
-                      console.log(`🔍 Rendering favorite #${index}:`, itemId.substring(0, 30))
-                      
-                      return (
-                        <div key={itemId} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
-                          {/* Debug info - can be removed after verification */}
-                          <div className="flex justify-between items-center mb-2">
-                            <p className="text-[8px] opacity-20 font-mono">
-                              Index: {index} | ID: {itemId.substring(0, 25)}...
-                            </p>
-                            <p className="text-[8px] opacity-20 font-mono">
-                              {new Date(itemTimestamp).toLocaleTimeString()}
-                            </p>
-                          </div>
-                          
-                          <textarea 
-                            readOnly 
-                            className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" 
-                            value={itemText} 
-                          />
-                          <div className="flex gap-4">
-                            <button 
-                              onClick={() => {
-                                console.log('📋 COPY clicked for index:', index, 'ID:', itemId)
-                                copyToClipboard(itemText)
-                              }} 
-                              className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
-                            >
-                              Copy
-                            </button>
-                            <button 
-                              onClick={() => {
-                                // KEY: Use local variable itemId instead of fav.id
-                                console.log('🗑️ DELETE button clicked!')
-                                console.log('   - Index:', index)
-                                console.log('   - ID:', itemId)
-                                console.log('   - Text preview:', itemText.substring(0, 50))
-                                deleteFavorite(itemId)
-                              }} 
-                              className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                    favorites.map((fav) => (
+                      <div key={fav.id} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
+                        {/* FIXED: Editable textarea with onChange handler */}
+                        <textarea 
+                          className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none focus:opacity-80 transition-opacity" 
+                          value={fav.text}
+                          onChange={(e) => updateFavoriteText(fav.id, e.target.value)}
+                          placeholder="Edit your prompt here..."
+                        />
+                        <div className="flex gap-4">
+                          <button 
+                            onClick={() => copyToClipboard(fav.text)} 
+                            className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
+                          >
+                            Copy
+                          </button>
+                          <button 
+                            onClick={() => deleteFavorite(fav.id)} 
+                            className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
+                          >
+                            Delete
+                          </button>
                         </div>
-                      )
-                    })
+                      </div>
+                    ))
                   )}
                 </div>
               </section>
@@ -719,11 +752,12 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
           </div>
         )}
 
+        {/* Agents Tab */}
         {activeTab === 'agents' && (
           <div className="max-w-6xl mx-auto">
             <header className="mb-12 border-b border-white/10 pb-8">
               <h2 className="text-4xl font-black uppercase italic mb-2">Company Agents</h2>
-              <p className="text-sm opacity-50 font-mono">Activate specialized AI personas in Idea Forge workflow</p>
+              <p className="text-sm opacity-50 font-mono">Activate specialized AI personas for advanced workflows</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -751,20 +785,20 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       className="w-full px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105 hover:shadow-2xl"
                       style={{ backgroundColor: agent.color }}
                     >
-                      Activate in Forge
+                      Activate Agent
                     </button>
                     <div className="flex gap-3">
                       <button
                         onClick={() => setSelectedAgentForPreview(agent)}
                         className="flex-1 px-4 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
                       >
-                        View Instructions
+                        View Config
                       </button>
                       <button
                         onClick={() => setEditingAgent({ ...agent })}
                         className="flex-1 px-4 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
                       >
-                        Customize Agent
+                        Customize
                       </button>
                     </div>
                   </div>
@@ -775,14 +809,14 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
             <div className="mt-16 p-8 rounded-2xl bg-white/5 border border-white/10">
               <h3 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4">Quick Start Guide:</h3>
               <ol className="text-sm opacity-70 space-y-2 font-mono">
-                <li>1. Click "Activate in Forge" - agent loads into Idea Forge with their expertise</li>
-                <li>2. Interface changes to agent's color theme</li>
-                <li>3. Type your task - it will be automatically enhanced with agent's system prompt</li>
-                <li>4. Use "Customize Agent" to adapt prompts for specific client requirements</li>
+                <li>1. Click "Activate Agent" to load specialized AI persona</li>
+                <li>2. Agent Terminal opens with dedicated interface</li>
+                <li>3. Describe your task - agent applies expert knowledge automatically</li>
+                <li>4. Use "Customize" to adapt prompts for client-specific requirements</li>
               </ol>
             </div>
 
-            {/* AGENT INSTRUCTIONS PREVIEW MODAL */}
+            {/* Agent Preview Modal */}
             {selectedAgentForPreview && (
               <div 
                 className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
@@ -843,7 +877,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
               </div>
             )}
 
-            {/* AGENT EDITING MODAL - FIXED controlled inputs */}
+            {/* Agent Editing Modal - FIXED with controlled inputs */}
             {editingAgent && (
               <div 
                 className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
@@ -871,7 +905,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                     </button>
                   </div>
 
-                  {/* EDITING FORM - ALL FIELDS ARE NOW CONTROLLED COMPONENTS */}
+                  {/* Editing Form - ALL CONTROLLED INPUTS */}
                   <div className="space-y-6">
                     {/* Specialization Field */}
                     <div>
@@ -881,10 +915,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <input
                         type="text"
                         value={editingAgent.specialization || ''}
-                        onChange={(e) => {
-                          console.log('✏️ Specialization changed:', e.target.value)
-                          setEditingAgent({ ...editingAgent, specialization: e.target.value })
-                        }}
+                        onChange={(e) => setEditingAgent({ ...editingAgent, specialization: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm font-mono transition-all"
                         placeholder="e.g., Python • FastAPI • Docker"
                       />
@@ -897,17 +928,14 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       </label>
                       <textarea
                         value={editingAgent.description || ''}
-                        onChange={(e) => {
-                          console.log('✏️ Description changed:', e.target.value.substring(0, 50) + '...')
-                          setEditingAgent({ ...editingAgent, description: e.target.value })
-                        }}
+                        onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm resize-none transition-all"
                         rows="3"
                         placeholder="Brief description of agent's expertise..."
                       />
                     </div>
 
-                    {/* System Prompt Field - Large Textarea */}
+                    {/* System Prompt Field */}
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
                         System Prompt
@@ -915,16 +943,13 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <div className="p-4 rounded-xl bg-slate-950 border border-white/10">
                         <textarea
                           value={editingAgent.systemPrompt || ''}
-                          onChange={(e) => {
-                            console.log('✏️ System prompt changed (length):', e.target.value.length)
-                            setEditingAgent({ ...editingAgent, systemPrompt: e.target.value })
-                          }}
+                          onChange={(e) => setEditingAgent({ ...editingAgent, systemPrompt: e.target.value })}
                           className="w-full h-[400px] bg-transparent border-none focus:outline-none text-xs font-mono opacity-80 resize-none"
                           placeholder="Paste client-specific guidelines, coding standards, or custom instructions here..."
                         />
                       </div>
                       <p className="text-[9px] opacity-40 mt-2 font-mono">
-                        💡 Tip: Paste client's coding standards, architectural patterns, or compliance requirements
+                        💡 Tip: Customize agent behavior for specific project requirements
                       </p>
                     </div>
                   </div>
@@ -932,29 +957,20 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                   {/* Action Buttons */}
                   <div className="mt-8 flex gap-4">
                     <button 
-                      onClick={() => {
-                        console.log('💾 Save button clicked for agent:', editingAgent.id)
-                        saveAgentChanges(editingAgent)
-                      }}
+                      onClick={() => saveAgentChanges(editingAgent)}
                       className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
                       style={{ backgroundColor: editingAgent.color }}
                     >
                       Save Changes
                     </button>
                     <button 
-                      onClick={() => {
-                        console.log('🔄 Reset button clicked for agent:', editingAgent.id)
-                        resetAgentToDefault(editingAgent.id)
-                      }}
+                      onClick={() => resetAgentToDefault(editingAgent.id)}
                       className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-yellow-500/50 text-yellow-500/70 hover:bg-yellow-500/10 transition-all"
                     >
                       Reset to Default
                     </button>
                     <button 
-                      onClick={() => {
-                        console.log('❌ Cancel button clicked')
-                        setEditingAgent(null)
-                      }}
+                      onClick={() => setEditingAgent(null)}
                       className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
                     >
                       Cancel
@@ -966,6 +982,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
           </div>
         )}
 
+        {/* About Tab */}
         {activeTab === 'about' && (
           <div className="max-w-3xl mx-auto pt-10 text-left">
             <h2 className="text-5xl font-black uppercase italic mb-12 transition-all" style={{ color: accentColor }}>Technical Overview</h2>
