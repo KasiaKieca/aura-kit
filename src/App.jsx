@@ -342,7 +342,7 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     localStorage.setItem('aura_forge_v1.0', JSON.stringify(favorites))
   }, [favorites])
 
-  // POPRAWIONA FUNKCJA - generowanie unikalnego ID dla ulubionych
+  // Generate unique ID for favorite prompts using timestamp and random string
   const generateUniqueId = () => {
     return `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
@@ -353,7 +353,28 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // UPDATED handleAction - integration with Agent Mode
+  // Delete favorite function - FIXED using functional update pattern
+  const deleteFavorite = (favoriteId) => {
+    console.log('🗑️ Attempting to delete favorite with ID:', favoriteId)
+    
+    // KEY CHANGE: Using functional update instead of direct reference to favorites
+    setFavorites(prevFavorites => {
+      console.log('📋 Current favorites count:', prevFavorites.length)
+      console.log('📋 All favorite IDs:', prevFavorites.map(f => f.id))
+      
+      const newFavorites = prevFavorites.filter(f => f.id !== favoriteId)
+      
+      console.log('✅ New favorites count:', newFavorites.length)
+      console.log('✅ Remaining IDs:', newFavorites.map(f => f.id))
+      
+      return newFavorites
+    })
+    
+    setSystemStatus("Removed from Collection")
+    setTimeout(() => setSystemStatus("System Ready"), 2000)
+  }
+
+  // UPDATED handleAction function - integration with Agent Mode
   const handleAction = (customText) => {
     const input = customText || command.trim()
     if (!input) return
@@ -568,13 +589,21 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                  <div className="flex gap-4">
                   <button onClick={() => copyToClipboard(generatedPrompt)} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Copy Result</button>
                   <button onClick={() => {
-                    // POPRAWIONA LOGIKA - używamy unikalnego ID
+                    // Generate unique ID with timestamp
                     const newFav = { 
                       id: generateUniqueId(), 
                       text: generatedPrompt,
                       timestamp: Date.now()
                     };
-                    setFavorites([newFav, ...favorites]);
+                    console.log('💾 Saving new favorite with ID:', newFav.id)
+                    
+                    // FIXED: Using functional update pattern
+                    setFavorites(prevFavorites => {
+                      const updated = [newFav, ...prevFavorites]
+                      console.log('📦 Updated favorites count:', updated.length)
+                      return updated
+                    })
+                    
                     setGeneratedPrompt("");
                     setSystemStatus("Saved to Collection!")
                     setTimeout(() => setSystemStatus("System Ready"), 2000)
@@ -608,8 +637,11 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
                   ) : (
-                    favorites.map(fav => (
+                    favorites.map((fav) => (
                       <div key={fav.id} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
+                        {/* Debug info - can be removed after verification */}
+                        <p className="text-[8px] opacity-20 font-mono mb-2">ID: {fav.id}</p>
+                        
                         <textarea 
                           readOnly 
                           className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" 
@@ -623,15 +655,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                             Copy
                           </button>
                           <button 
-                            onClick={() => {
-                              // POPRAWIONA LOGIKA USUWANIA - używamy strict equality z ID
-                              console.log('Deleting favorite with ID:', fav.id); // Debug
-                              const newFavs = favorites.filter(f => f.id !== fav.id);
-                              console.log('Favorites before:', favorites.length, 'after:', newFavs.length); // Debug
-                              setFavorites(newFavs);
-                              setSystemStatus("Removed from Collection")
-                              setTimeout(() => setSystemStatus("System Ready"), 2000)
-                            }} 
+                            onClick={() => deleteFavorite(fav.id)} 
                             className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
                           >
                             Delete
