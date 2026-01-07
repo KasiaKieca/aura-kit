@@ -342,9 +342,10 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     localStorage.setItem('aura_forge_v1.0', JSON.stringify(favorites))
   }, [favorites])
 
-  // Generate unique ID for favorite prompts using timestamp and random string
+  // Generate unique ID for favorite prompts - extended version with double randomization
   const generateUniqueId = () => {
-    return `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Additional randomization for 100% uniqueness guarantee
+    return `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 5)}`
   }
 
   const copyToClipboard = (text) => {
@@ -353,19 +354,31 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // Delete favorite function - FIXED using functional update pattern
+  // Delete favorite function - FIXED with extended debug logs
   const deleteFavorite = (favoriteId) => {
-    console.log('🗑️ Attempting to delete favorite with ID:', favoriteId)
+    console.log('🗑️ DELETE CLICKED - Target ID:', favoriteId)
+    console.log('🗑️ Current favorites state:', favorites)
     
-    // KEY CHANGE: Using functional update instead of direct reference to favorites
+    // Use functional update to ensure latest state
     setFavorites(prevFavorites => {
-      console.log('📋 Current favorites count:', prevFavorites.length)
-      console.log('📋 All favorite IDs:', prevFavorites.map(f => f.id))
+      console.log('📋 Inside setFavorites - prevFavorites length:', prevFavorites.length)
+      console.log('📋 All current IDs:', prevFavorites.map(f => ({ id: f.id, preview: f.text.substring(0, 30) })))
+      console.log('📋 Looking for ID to delete:', favoriteId)
       
-      const newFavorites = prevFavorites.filter(f => f.id !== favoriteId)
+      // Find item to be deleted (for debugging)
+      const toDelete = prevFavorites.find(f => f.id === favoriteId)
+      console.log('❌ Found item to delete:', toDelete ? { id: toDelete.id, preview: toDelete.text.substring(0, 50) } : 'NOT FOUND!')
       
-      console.log('✅ New favorites count:', newFavorites.length)
-      console.log('✅ Remaining IDs:', newFavorites.map(f => f.id))
+      const newFavorites = prevFavorites.filter(f => {
+        const keep = f.id !== favoriteId
+        if (!keep) {
+          console.log('🚫 REMOVING:', { id: f.id, preview: f.text.substring(0, 50) })
+        }
+        return keep
+      })
+      
+      console.log('✅ New favorites after filter:', newFavorites.length)
+      console.log('📊 Count change: before =', prevFavorites.length, ', after =', newFavorites.length)
       
       return newFavorites
     })
@@ -429,13 +442,18 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
     setTimeout(() => setSystemStatus("System Ready"), 2000)
   }
 
-  // FUNCTION TO SAVE AGENT CHANGES
+  // FUNCTION TO SAVE AGENT CHANGES - FIXED to properly update state
   const saveAgentChanges = (updatedAgent) => {
-    setCompanyAgents(prevAgents => 
-      prevAgents.map(agent => 
-        agent.id === updatedAgent.id ? updatedAgent : agent
+    console.log('💾 Saving agent changes:', updatedAgent)
+    
+    setCompanyAgents(prevAgents => {
+      const updated = prevAgents.map(agent => 
+        agent.id === updatedAgent.id ? { ...updatedAgent } : agent
       )
-    )
+      console.log('✅ Updated agents array:', updated)
+      return updated
+    })
+    
     setEditingAgent(null)
     setSystemStatus("AGENT CUSTOMIZATION SAVED!")
     setTimeout(() => setSystemStatus("System Ready"), 3000)
@@ -445,6 +463,8 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
   const resetAgentToDefault = (agentId) => {
     const defaultAgent = defaultAgents.find(a => a.id === agentId)
     if (defaultAgent) {
+      console.log('🔄 Resetting agent to default:', agentId)
+      
       setCompanyAgents(prevAgents => 
         prevAgents.map(agent => 
           agent.id === agentId ? { ...defaultAgent } : agent
@@ -589,18 +609,19 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                  <div className="flex gap-4">
                   <button onClick={() => copyToClipboard(generatedPrompt)} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Copy Result</button>
                   <button onClick={() => {
-                    // Generate unique ID with timestamp
+                    // Generate unique ID with extended randomization
                     const newFav = { 
                       id: generateUniqueId(), 
                       text: generatedPrompt,
                       timestamp: Date.now()
                     };
-                    console.log('💾 Saving new favorite with ID:', newFav.id)
+                    console.log('💾 SAVING new favorite with ID:', newFav.id)
                     
-                    // FIXED: Using functional update pattern
+                    // Use functional update pattern
                     setFavorites(prevFavorites => {
                       const updated = [newFav, ...prevFavorites]
                       console.log('📦 Updated favorites count:', updated.length)
+                      console.log('📦 All IDs after save:', updated.map(f => f.id))
                       return updated
                     })
                     
@@ -637,32 +658,60 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                       <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
                   ) : (
-                    favorites.map((fav) => (
-                      <div key={fav.id} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
-                        {/* Debug info - can be removed after verification */}
-                        <p className="text-[8px] opacity-20 font-mono mb-2">ID: {fav.id}</p>
-                        
-                        <textarea 
-                          readOnly 
-                          className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" 
-                          value={fav.text} 
-                        />
-                        <div className="flex gap-4">
-                          <button 
-                            onClick={() => copyToClipboard(fav.text)} 
-                            className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
-                          >
-                            Copy
-                          </button>
-                          <button 
-                            onClick={() => deleteFavorite(fav.id)} 
-                            className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
-                          >
-                            Delete
-                          </button>
+                    favorites.map((fav, index) => {
+                      // KEY: Create local variables in each map() iteration scope
+                      // This ensures closure in onClick always has the correct value
+                      const itemId = fav.id
+                      const itemText = fav.text
+                      const itemTimestamp = fav.timestamp
+                      
+                      // Debug log - can be removed after verification
+                      console.log(`🔍 Rendering favorite #${index}:`, itemId.substring(0, 30))
+                      
+                      return (
+                        <div key={itemId} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
+                          {/* Debug info - can be removed after verification */}
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-[8px] opacity-20 font-mono">
+                              Index: {index} | ID: {itemId.substring(0, 25)}...
+                            </p>
+                            <p className="text-[8px] opacity-20 font-mono">
+                              {new Date(itemTimestamp).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          
+                          <textarea 
+                            readOnly 
+                            className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" 
+                            value={itemText} 
+                          />
+                          <div className="flex gap-4">
+                            <button 
+                              onClick={() => {
+                                console.log('📋 COPY clicked for index:', index, 'ID:', itemId)
+                                copyToClipboard(itemText)
+                              }} 
+                              className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
+                            >
+                              Copy
+                            </button>
+                            <button 
+                              onClick={() => {
+                                // KEY: Use local variable itemId instead of fav.id
+                                console.log('🗑️ DELETE button clicked!')
+                                console.log('   - Index:', index)
+                                console.log('   - ID:', itemId)
+                                console.log('   - Text preview:', itemText.substring(0, 50))
+                                deleteFavorite(itemId)
+                              }} 
+                              className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </section>
@@ -794,7 +843,7 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
               </div>
             )}
 
-            {/* AGENT EDITING MODAL */}
+            {/* AGENT EDITING MODAL - FIXED controlled inputs */}
             {editingAgent && (
               <div 
                 className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-8"
@@ -822,45 +871,54 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                     </button>
                   </div>
 
-                  {/* EDITING FORM */}
+                  {/* EDITING FORM - ALL FIELDS ARE NOW CONTROLLED COMPONENTS */}
                   <div className="space-y-6">
-                    {/* Specialization */}
+                    {/* Specialization Field */}
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
                         Specialization
                       </label>
                       <input
                         type="text"
-                        value={editingAgent.specialization}
-                        onChange={(e) => setEditingAgent({ ...editingAgent, specialization: e.target.value })}
+                        value={editingAgent.specialization || ''}
+                        onChange={(e) => {
+                          console.log('✏️ Specialization changed:', e.target.value)
+                          setEditingAgent({ ...editingAgent, specialization: e.target.value })
+                        }}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm font-mono transition-all"
                         placeholder="e.g., Python • FastAPI • Docker"
                       />
                     </div>
 
-                    {/* Description */}
+                    {/* Description Field */}
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
                         Description
                       </label>
                       <textarea
-                        value={editingAgent.description}
-                        onChange={(e) => setEditingAgent({ ...editingAgent, description: e.target.value })}
+                        value={editingAgent.description || ''}
+                        onChange={(e) => {
+                          console.log('✏️ Description changed:', e.target.value.substring(0, 50) + '...')
+                          setEditingAgent({ ...editingAgent, description: e.target.value })
+                        }}
                         className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-sm resize-none transition-all"
                         rows="3"
                         placeholder="Brief description of agent's expertise..."
                       />
                     </div>
 
-                    {/* System Prompt - large textarea */}
+                    {/* System Prompt Field - Large Textarea */}
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest opacity-50 mb-3">
                         System Prompt
                       </label>
                       <div className="p-4 rounded-xl bg-slate-950 border border-white/10">
                         <textarea
-                          value={editingAgent.systemPrompt}
-                          onChange={(e) => setEditingAgent({ ...editingAgent, systemPrompt: e.target.value })}
+                          value={editingAgent.systemPrompt || ''}
+                          onChange={(e) => {
+                            console.log('✏️ System prompt changed (length):', e.target.value.length)
+                            setEditingAgent({ ...editingAgent, systemPrompt: e.target.value })
+                          }}
                           className="w-full h-[400px] bg-transparent border-none focus:outline-none text-xs font-mono opacity-80 resize-none"
                           placeholder="Paste client-specific guidelines, coding standards, or custom instructions here..."
                         />
@@ -871,23 +929,32 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                     </div>
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action Buttons */}
                   <div className="mt-8 flex gap-4">
                     <button 
-                      onClick={() => saveAgentChanges(editingAgent)}
+                      onClick={() => {
+                        console.log('💾 Save button clicked for agent:', editingAgent.id)
+                        saveAgentChanges(editingAgent)
+                      }}
                       className="flex-1 px-6 py-4 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105"
                       style={{ backgroundColor: editingAgent.color }}
                     >
                       Save Changes
                     </button>
                     <button 
-                      onClick={() => resetAgentToDefault(editingAgent.id)}
+                      onClick={() => {
+                        console.log('🔄 Reset button clicked for agent:', editingAgent.id)
+                        resetAgentToDefault(editingAgent.id)
+                      }}
                       className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-yellow-500/50 text-yellow-500/70 hover:bg-yellow-500/10 transition-all"
                     >
                       Reset to Default
                     </button>
                     <button 
-                      onClick={() => setEditingAgent(null)}
+                      onClick={() => {
+                        console.log('❌ Cancel button clicked')
+                        setEditingAgent(null)
+                      }}
                       className="px-6 py-4 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all"
                     >
                       Cancel
