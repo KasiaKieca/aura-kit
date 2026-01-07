@@ -342,6 +342,11 @@ Provide production-ready Playwright tests with POM structure, TypeScript types, 
     localStorage.setItem('aura_forge_v1.0', JSON.stringify(favorites))
   }, [favorites])
 
+  // POPRAWIONA FUNKCJA - generowanie unikalnego ID dla ulubionych
+  const generateUniqueId = () => {
+    return `fav_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
     setSystemStatus("Clipboard Updated")
@@ -563,9 +568,16 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
                  <div className="flex gap-4">
                   <button onClick={() => copyToClipboard(generatedPrompt)} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Copy Result</button>
                   <button onClick={() => {
-                    const newFav = { id: Date.now(), text: generatedPrompt };
+                    // POPRAWIONA LOGIKA - używamy unikalnego ID
+                    const newFav = { 
+                      id: generateUniqueId(), 
+                      text: generatedPrompt,
+                      timestamp: Date.now()
+                    };
                     setFavorites([newFav, ...favorites]);
                     setGeneratedPrompt("");
+                    setSystemStatus("Saved to Collection!")
+                    setTimeout(() => setSystemStatus("System Ready"), 2000)
                   }} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all">Save to Collection</button>
                 </div>
               </div>
@@ -590,23 +602,44 @@ Apply the above agent expertise to fulfill this specific user request. Maintain 
               <section>
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 mb-8 border-l-2 pl-3" style={{ borderColor: accentColor }}>Your Collection ({favorites.length})</h3>
                 <div className="space-y-4">
-                  {favorites.map(fav => (
-                    <div key={fav.id} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
-                      <textarea readOnly className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" value={fav.text} />
-                      <div className="flex gap-4">
-                        <button onClick={() => copyToClipboard(fav.text)} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Copy</button>
-                        <button 
-                          onClick={() => {
-                            const newFavs = favorites.filter(f => f.id !== fav.id);
-                            setFavorites(newFavs);
-                          }} 
-                          className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                  {favorites.length === 0 ? (
+                    <div className="p-8 rounded-2xl bg-white/5 border border-white/10 text-center">
+                      <p className="text-sm opacity-40 font-mono">No saved prompts yet</p>
+                      <p className="text-[10px] opacity-30 font-mono mt-2">Generate a prompt and click "Save to Collection"</p>
                     </div>
-                  ))}
+                  ) : (
+                    favorites.map(fav => (
+                      <div key={fav.id} className="p-5 rounded-2xl bg-white/5 border border-white/10 group transition-all">
+                        <textarea 
+                          readOnly 
+                          className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" 
+                          value={fav.text} 
+                        />
+                        <div className="flex gap-4">
+                          <button 
+                            onClick={() => copyToClipboard(fav.text)} 
+                            className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all"
+                          >
+                            Copy
+                          </button>
+                          <button 
+                            onClick={() => {
+                              // POPRAWIONA LOGIKA USUWANIA - używamy strict equality z ID
+                              console.log('Deleting favorite with ID:', fav.id); // Debug
+                              const newFavs = favorites.filter(f => f.id !== fav.id);
+                              console.log('Favorites before:', favorites.length, 'after:', newFavs.length); // Debug
+                              setFavorites(newFavs);
+                              setSystemStatus("Removed from Collection")
+                              setTimeout(() => setSystemStatus("System Ready"), 2000)
+                            }} 
+                            className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
             </div>
