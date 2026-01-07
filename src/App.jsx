@@ -19,22 +19,125 @@ function App() {
   const [showHelp, setShowHelp] = useState(false)
   const [generatedPrompt, setGeneratedPrompt] = useState("")
 
-  const wrapInExpertContext = (text) => `**System Context:**
-You are a Senior React Developer & Vibe Coder specializing in modern, aesthetically refined component design.
+  // FUNKCJA Z RÓŻNYMI SZABLONAMI DLA KAŻDEJ KATEGORII
+  const wrapInExpertContext = (text, category = 'UI') => {
+    const templates = {
+      UI: `**System Context:**
+You are a Senior UI/UX Designer & Frontend Developer specializing in modern web aesthetics and glassmorphism.
 
 **Technical Stack:**
-- Tailwind CSS v4
-- Framer Motion & Lucide React
+- Tailwind CSS v4 with custom backdrop-blur utilities
+- Framer Motion for smooth micro-interactions
+- Lucide React for consistent iconography
 
 **Component Specs:**
-- Apply glassmorphism effect and neon edges (${accentColor})
-- Ensure full responsiveness and smooth transitions
+- Apply glassmorphism effect using backdrop-blur-xl and bg-white/10
+- Use neon accent borders with color ${accentColor}
+- Ensure responsive behavior across mobile, tablet, and desktop
+- Include hover states with scale transforms and glow effects
+- Apply proper spacing using Tailwind's spacing scale
 
 **User Intent:**
-${text} - zastosuj najlepsze praktyki UX.
+${text} - zaprojektuj z naciskiem na estetykę i user experience.
 
 **Output Format:**
-Deliver only clean, production-ready component code.`
+Deliver clean React component code with Tailwind classes. No explanations, only production-ready code.`,
+
+      Dev: `**System Context:**
+You are a Senior Software Engineer specializing in clean architecture, SOLID principles, and modern React patterns.
+
+**Technical Stack:**
+- React 18+ with TypeScript
+- Custom hooks for state management
+- ESLint + Prettier for code quality
+- Jest + React Testing Library for unit tests
+
+**Component Specs:**
+- Follow Single Responsibility Principle
+- Use descriptive variable names (no abbreviations)
+- Implement proper error handling with try/catch
+- Add JSDoc comments for public functions
+- Ensure type safety with TypeScript
+- Include accessibility features (ARIA labels, keyboard navigation)
+
+**User Intent:**
+${text} - zaimplementuj zgodnie z najlepszymi praktykami clean code.
+
+**Output Format:**
+Deliver TypeScript code with proper types and error handling. Include usage example in comments.`,
+
+      Data: `**System Context:**
+You are a Senior Data Engineer specializing in SQL optimization, data transformation, and analytics pipelines.
+
+**Technical Stack:**
+- SQL (PostgreSQL/MySQL) with query optimization
+- Python with Pandas for data manipulation
+- ETL pipeline design patterns
+- Data validation and cleaning strategies
+
+**Component Specs:**
+- Write optimized queries with proper indexing
+- Use window functions for complex aggregations
+- Handle NULL values and edge cases
+- Include comments explaining business logic
+- Suggest performance improvements
+- Add data quality checks
+
+**User Intent:**
+${text} - zoptymalizuj pod kątem wydajności i czytelności.
+
+**Output Format:**
+Deliver SQL queries or Python code with performance notes. Include sample output structure.`,
+
+      Marketing: `**System Context:**
+You are a Senior Content Strategist & Copywriter specializing in conversion-focused messaging and brand storytelling.
+
+**Technical Stack:**
+- SEO best practices (keyword density, meta tags)
+- A/B testing frameworks
+- Emotional triggers and persuasion techniques
+- Platform-specific formats (Twitter threads, LinkedIn posts, email campaigns)
+
+**Component Specs:**
+- Use active voice and power words
+- Include clear call-to-action (CTA)
+- Optimize for readability (short paragraphs, bullet points)
+- Add emotional hooks in first sentence
+- Target specific audience segment
+- Ensure brand voice consistency
+
+**User Intent:**
+${text} - stwórz z naciskiem na engagement i konwersję.
+
+**Output Format:**
+Deliver copy with character counts and formatting notes. Include A/B testing suggestions.`,
+
+      Creative: `**System Context:**
+You are a Senior Creative Director specializing in visual storytelling, concept development, and artistic vision.
+
+**Technical Stack:**
+- Color theory and composition principles
+- Midjourney/DALL-E prompt engineering
+- Storyboarding and narrative structure
+- Typography and visual hierarchy
+
+**Component Specs:**
+- Use sensory language and vivid imagery
+- Create emotional resonance through storytelling
+- Apply rule of thirds and golden ratio
+- Include lighting, mood, and atmosphere details
+- Specify visual style (cyberpunk, minimalist, etc.)
+- Add cultural references when relevant
+
+**User Intent:**
+${text} - zaprojektuj z artystyczną wizją i attention to detail.
+
+**Output Format:**
+Deliver creative brief or detailed description. Include mood board suggestions and reference examples.`
+    };
+
+    return templates[category] || templates.UI;
+  };
 
   const rawKits = [
     { cat: "UI", text: "modern glassmorphism sidebar with neon accents" },
@@ -47,10 +150,10 @@ Deliver only clean, production-ready component code.`
     { cat: "Creative", text: "midjourney prompt for a futuristic city at sunset" }
   ];
 
-  // Każdy starter jest teraz "BOGATY" od razu na liście
+  // Każdy starter używa SWOJEGO szablonu na podstawie kategorii
   const starterKits = rawKits.map(kit => ({
     ...kit,
-    richText: wrapInExpertContext(kit.text)
+    richText: wrapInExpertContext(kit.text, kit.cat)
   }));
 
   const [favorites, setFavorites] = useState(() => {
@@ -114,7 +217,6 @@ Deliver only clean, production-ready component code.`
             <div className="w-full max-w-2xl flex gap-3 mb-6">
               <input type="text" placeholder="Describe your idea..." className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-5 text-lg font-mono focus:outline-none focus:border-white/20 transition-all shadow-inner" value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAction()} />
               <button onClick={() => handleAction()} className="px-8 rounded-2xl font-black uppercase text-xs text-slate-900 shadow-xl transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Create</button>
-              {/* NAPRAWIONY PYTAJNIK HELP */}
               <button onClick={() => setShowHelp(!showHelp)} className="w-16 rounded-2xl border font-bold text-xl opacity-40 hover:opacity-100 flex items-center justify-center shadow-lg transition-all" style={{ borderColor: accentColor + '40', color: accentColor }}>?</button>
             </div>
             {showHelp && (
@@ -141,7 +243,11 @@ Deliver only clean, production-ready component code.`
                  <textarea readOnly className="w-full h-48 bg-transparent border-none resize-none text-sm font-mono opacity-80 focus:outline-none mb-6 scrollbar-hide" value={generatedPrompt} />
                  <div className="flex gap-4">
                   <button onClick={() => copyToClipboard(generatedPrompt)} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] text-slate-900 shadow-lg transition-all hover:scale-105" style={{ backgroundColor: accentColor }}>Copy Result</button>
-                  <button onClick={() => {setFavorites([{ id: Date.now(), text: generatedPrompt }, ...favorites]); setGeneratedPrompt("")}} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all">Save to Collection</button>
+                  <button onClick={() => {
+                    const newFav = { id: Date.now(), text: generatedPrompt };
+                    setFavorites([newFav, ...favorites]);
+                    setGeneratedPrompt("");
+                  }} className="px-6 py-3 rounded-xl font-bold uppercase text-[10px] border border-white/20 hover:bg-white/10 transition-all">Save to Collection</button>
                 </div>
               </div>
             )}
@@ -153,11 +259,9 @@ Deliver only clean, production-ready component code.`
                   {filteredKits.map((kit, i) => (
                     <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all">
                       <p className="text-[10px] font-black uppercase opacity-20 mb-2">{kit.cat}</p>
-                      {/* BOGATY PROMPT WIDOCZNY OD RAZU */}
                       <textarea readOnly className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" value={kit.richText} />
                       <div className="flex gap-4">
                         <button onClick={() => copyToClipboard(kit.richText)} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all" style={{ color: accentColor }}>Copy Expert</button>
-                        {/* PRZYCISK EDIT PRZYWRÓCONY */}
                         <button onClick={() => {setCommand(kit.text); setActiveTab('forge')}} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Edit in Forge</button>
                       </div>
                     </div>
@@ -172,7 +276,18 @@ Deliver only clean, production-ready component code.`
                       <textarea readOnly className="w-full h-24 bg-transparent border-none resize-none text-[11px] font-mono opacity-50 mb-4 focus:outline-none" value={fav.text} />
                       <div className="flex gap-4">
                         <button onClick={() => copyToClipboard(fav.text)} className="text-[9px] font-black uppercase opacity-40 hover:opacity-100 transition-all">Copy</button>
-                        <button onClick={() => setFavorites(favorites.filter(f => f.id !== fav.id))} className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all">Delete</button>
+                        <button 
+                          onClick={() => {
+                            console.log('Deleting:', fav.id);
+                            console.log('Before:', favorites.map(f => f.id));
+                            const newFavs = favorites.filter(f => f.id !== fav.id);
+                            console.log('After:', newFavs.map(f => f.id));
+                            setFavorites(newFavs);
+                          }} 
+                          className="text-[9px] font-black uppercase text-red-500/50 hover:text-red-500 transition-all"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
